@@ -1,0 +1,27 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <option name="scopesOrder">
+      <list>
+        <option value="All Changed Files" />
+        <option value="Open Files" />
+        <option value="Project Files" />
+        <option value="Scratches and Consoles" />
+        <option value="Test Files" />
+      </list>
+    </option>
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <scope name="Test Files" level="WEAK WARNING" enabled="false" />
+      <Languages>
+        <language minSize="49" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="django.db.models.fields.related.ForeignKey.tasklists" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

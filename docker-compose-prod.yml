@@ -1,0 +1,43 @@
+name: easydownloader
+
+services:
+   django:
+     build: .
+     ports:
+       - "8000:8000"
+     command:
+       - "gunicorn config.wsgi -b 0.0.0.0:8000"
+     environment:
+       - DJANGO_SECRET_KEY='django-insecure-nox5f%g+_r6c^z2%y@(esv!r(3-cjo8+opax_(c2=ek=8gzkw&'
+       - DATABASE_URL='postgres://postgres:postgres@postgresql:5432/postgresql'
+     volumes:
+       - .:code/
+     depends_on:
+       - postgresql
+
+   celery:
+     build: .
+     ports:
+       - ""
+     command:
+       - "celery -A config worker -l INFO"
+     environment:
+       - DJANGO_SECRET_KEY='django-insecure-nox5f%g+_r6c^z2%y@(esv!r(3-cjo8+opax_(c2=ek=8gzkw&'
+       - CELERY_BROKER_URL='redis://redis:6379/0'
+     volumes:
+       - .:code/
+     depends_on:
+       - django
+       - redis
+
+   postgresql:
+     image: postgres:latest
+     environment:
+       - POSTGRES_DB=postgresql
+       - POSTGRES_USER=postgres
+       - POSTGRES_PASSWORD=postgres
+     volumes:
+       - postgresql_data: /var/lib/postgresql/data
+
+   redis:
+     image: redis:latest
