@@ -8,6 +8,8 @@ django = "*"
 environs = {extras = ["django"], version = "*"}
 celery = "*"
 django-celery-results = "*"
+django-crispy-forms = "*"
+crispy-bootstrap4 = "*"
 
 [dev-packages]
 

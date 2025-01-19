@@ -41,10 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    # added
     'django_celery_results',
+    'crispy_forms',
+    'crispy_bootstrap4',
 
     # local
+    'home.apps.HomeConfig',
     'youtube.apps.YoutubeConfig',
 ]
 
@@ -137,3 +140,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'default'
 CELERY_RESULT_EXTENDED = True
+
+# crispy
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

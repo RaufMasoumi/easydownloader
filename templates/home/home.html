@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %} Home {% endblock %}
+
+{% block content %}
+    <h1>Enter a link</h1>
+    <form method="get">
+        {{ form | crispy }}
+        {% if valid_link %}
+            <h5>Link is valid! lets download it!</h5>
+        {% else %}
+            <h5>Link is invalid!</h5>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+{% endblock %}
