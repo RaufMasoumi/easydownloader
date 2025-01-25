@@ -24,5 +24,5 @@ urlpatterns = [
     # added
     path('', RedirectView.as_view(pattern_name='home')),
     path('', include('home.urls')),
-    path('youtube/', include('youtube.urls')),
+    path('downloads/', include('downloader.urls'))
 ]

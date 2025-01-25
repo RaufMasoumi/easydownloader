@@ -48,7 +48,7 @@ INSTALLED_APPS = [
 
     # local
     'home.apps.HomeConfig',
-    'youtube.apps.YoutubeConfig',
+    'downloader.apps.DownloaderConfig',
 ]
 
 MIDDLEWARE = [
