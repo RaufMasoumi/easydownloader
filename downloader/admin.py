@@ -4,7 +4,7 @@ from .models import Content
 
 
 class ContentAdmin(admin.ModelAdmin):
-    model = Content
+    fields = ['name', 'download_url', 'download_path']
     list_display = ['pk', 'processed_at', 'expiration_date']
 
 
