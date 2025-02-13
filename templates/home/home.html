@@ -8,11 +8,17 @@
     <form method="get">
         {{ form | crispy }}
         {% if valid_link %}
-            <h5>Link is valid! lets download it!</h5>
+            {% if successful_process %}
+{#            {{ content_detail_form | crispy }}#}
+{#            <h5>Link is valid! lets download it!</h5>#}
+{#            <button type="submit" class="btn btn-success">Download</button>#}
+            <h5>We have processed your link successfully!</h5>
+            <h5><a href="{{ download_link }}">Click Here to download the content</a></h5>
+            {% endif %}    
         {% else %}
             <h5>Link is invalid!</h5>
+            <button type="submit" class="btn btn-primary">Submit</button>
         {% endif %}
-        <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 
 {% endblock %}

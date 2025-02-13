@@ -1,6 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, reverse
 from django.urls import reverse_lazy
+from django.http import FileResponse
 from django.views.generic import FormView
+from downloader.tasks import download_content
+from downloader.views import DownloadedContentResponseView
 from .forms import LinkForm
 # Create your views here.
 
@@ -12,7 +15,7 @@ class ProcessLinkFormView(FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if self.request.method == "GET":
+        if self.request.method == "GET" and self.request.GET:
             kwargs.update(
                 {
                     'data': self.request.GET,
@@ -27,7 +30,9 @@ class ProcessLinkFormView(FormView):
     def form_valid(self, form):
         context = self.get_context_data()
         context['valid_link'] = True
-        # permanent! this will be the process of downloading from the link.
+        info = download_content(form.cleaned_data['link'])
+        context['successful_process'] = True
+        # context['download_url'] = reverse('download')
         return self.render_to_response(context)
 
     def form_invalid(self, form):
@@ -37,11 +42,6 @@ class ProcessLinkFormView(FormView):
         return self.render_to_response(context)
 
 
-
 class HomeView(ProcessLinkFormView):
     template_name = 'home/home.html'
     success_url = reverse_lazy('home')
-
-
-
-
