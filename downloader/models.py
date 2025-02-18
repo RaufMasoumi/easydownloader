@@ -4,6 +4,11 @@ import uuid
 # Create your models here.
 
 
+class AllowedExtractorManager(models.Manager):
+    def active_extractors(self):
+        return self.filter(active=True)
+
+
 class Content(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=300, blank=True, null=True)
@@ -24,3 +29,15 @@ class Content(models.Model):
             if update_fields:
                 kwargs['update_fields'] = {'expiration_date'}.union(update_fields)
         super().save()
+
+
+class AllowedExtractor(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=300)
+    regex = models.CharField(max_length=300)
+    main_extractor = models.ForeignKey('self', on_delete=models.CASCADE, related_name='detailed_extractors', blank=True, null=True)
+    active = models.BooleanField(default=True, blank=True)
+    objects = AllowedExtractorManager()
+
+    def __str__(self):
+        return f'{self.name} extractor'
