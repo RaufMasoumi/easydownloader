@@ -40,7 +40,20 @@ class YoutubeDownloader:
             filter_string = ''
             if self.format_data.get('extension'):
                 filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
-            translated_format += f'bestaudio{filter_string}/best'
+                audio_converter_postprocessor = {
+                            'key': 'FFmpegExtractAudio',
+                            'preferredcodec': f'{self.format_data["extension"]}',
+                }
+                if self.format_data.get('bitrate'):
+                    audio_converter_postprocessor.update({
+                        'preferredquality': f'{self.format_data["bitrate"]}',
+                    })
+                self.options.update({
+                    'postprocessors': [
+                        audio_converter_postprocessor,
+                    ]
+                })
+            translated_format += f'bestaudio{filter_string}/bestaudio/best'
         return translated_format
 
     def get_format_sort(self, default_sort=''):
