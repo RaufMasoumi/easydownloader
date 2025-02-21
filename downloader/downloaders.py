@@ -22,17 +22,16 @@ class YoutubeDownloader:
         if not self.format_data:
             return default_format
         translated_format = ''
+        postprocessors = self.options.get('postprocessors', [])
         if self.is_video:
             filter_string = ''
             if self.format_data.get('extension'):
                 # No need to do filtering, cause the output video will be converted
                 # filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
-                self.options.update({
-                    'postprocessors': [{
+                postprocessors += [{
                         'key': 'FFmpegVideoConvertor',
                         'preferedformat': f'{self.format_data['extension']}',
-                    }]
-                })
+                    }, ]
             if self.format_data.get('aspect_ratio'):
                 filter_string += '[aspect_ratio={aspect_ratio}]'.format(aspect_ratio=self.format_data['aspect_ratio'])
             translated_format += f'bestvideo{filter_string}+bestaudio/best'
@@ -48,12 +47,9 @@ class YoutubeDownloader:
                     audio_converter_postprocessor.update({
                         'preferredquality': f'{self.format_data["bitrate"]}',
                     })
-                self.options.update({
-                    'postprocessors': [
-                        audio_converter_postprocessor,
-                    ]
-                })
+                postprocessors += [audio_converter_postprocessor, ]
             translated_format += f'bestaudio{filter_string}/bestaudio/best'
+        self.options['postprocessors'] = postprocessors
         return translated_format
 
     def get_format_sort(self, default_sort=''):
@@ -76,6 +72,7 @@ class YoutubeDownloader:
             'format': self.get_format(),
             'format_sort': self.get_format_sort(),
         })
+        self.options.get('postprocessors', []).reverse()
         return self.options
 
     def download(self):

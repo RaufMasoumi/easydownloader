@@ -58,6 +58,16 @@ def download_content(url, where_to_save='temp', format_data=None):
         'outtmpl': str(BASE_DIR / os.path.join(where_to_save, '%(title)s.%(ext)s')),
         'allowed_extractors': allowed_extractors_regexes_list,
         'verbos': True,
+        'writethumbnail': True,
+        'postprocessors': [
+            {
+                'key': 'FFmpegMetadata',
+            },
+            {
+                'key': 'EmbedThumbnail',
+                'already_have_thumbnail': False,
+            }
+        ]
     }
     with yt_dlp.YoutubeDL(options) as main_downloader:
         print('starting download process...')
