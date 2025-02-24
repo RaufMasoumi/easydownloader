@@ -11,6 +11,7 @@ django-celery-results = "*"
 django-crispy-forms = "*"
 crispy-bootstrap4 = "*"
 yt-dlp = {extras = ["default"], version = "*"}
+pillow = "*"
 
 [dev-packages]
 

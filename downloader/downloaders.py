@@ -1,7 +1,29 @@
 from config.settings import BASE_DIR
 import os
 import yt_dlp
+from PIL import Image
 
+
+class ThumbnailEditedYoutubeDL(yt_dlp.YoutubeDL):
+    # making the thumbnails 1:1
+    def _write_thumbnails(self, label, info_dict, filename, thumb_filename_base=None):
+        ret = super()._write_thumbnails(label, info_dict, filename, thumb_filename_base)
+        if ret:
+            print('changing the cover...')
+            for _, thumbnail_file_name in ret:
+                try:
+                    with Image.open(thumbnail_file_name) as img:
+                        width, height = img.size
+                        min_dimension = min(height, width)
+                        left = (width - min_dimension) // 2
+                        top = (height - min_dimension) // 2
+                        right = (width + min_dimension) // 2
+                        bottom = (height + min_dimension) // 2
+                        box = (left, top, right, bottom)
+                        img.crop(box).save(thumbnail_file_name)
+                except:
+                    pass
+        return ret
 
 class YoutubeDownloader:
 
@@ -79,7 +101,8 @@ class YoutubeDownloader:
         print('this is the customized download function for youtube!')
         code = 1
         print(self.get_options())
-        with yt_dlp.YoutubeDL(self.get_options()) as downloader:
+        youtubedl = yt_dlp.YoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
+        with youtubedl(self.get_options()) as downloader:
             print('downloading:')
             if self.info_file_path:
                 code = downloader.download_with_info_file(self.info_file_path)
