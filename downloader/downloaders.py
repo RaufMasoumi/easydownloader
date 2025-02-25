@@ -48,15 +48,20 @@ class YoutubeDownloader:
         if self.is_video:
             filter_string = ''
             if self.format_data.get('extension'):
-                # No need to do filtering, cause the output video will be converted
-                # filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
+                filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
+                self.options.update(
+                    {
+                        'merge_output_format': '/'.join([self.format_data['extension'], 'mp4', 'mkv', 'webm']),
+                    }
+                )
                 postprocessors += [{
                         'key': 'FFmpegVideoConvertor',
                         'preferedformat': f'{self.format_data['extension']}',
                     }, ]
             if self.format_data.get('aspect_ratio'):
                 filter_string += '[aspect_ratio={aspect_ratio}]'.format(aspect_ratio=self.format_data['aspect_ratio'])
-            translated_format += f'bestvideo{filter_string}+bestaudio/best'
+            translated_format += f'bestvideo{filter_string}+bestaudio/bestvideo+bestaudio/best'
+
         else:
             filter_string = ''
             if self.format_data.get('extension'):
