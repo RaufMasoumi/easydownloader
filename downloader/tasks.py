@@ -77,7 +77,7 @@ def download_content(url, where_to_save='temp', format_data=None):
             json.dump(main_downloader.sanitize_info(info), info_file)
         print('checking the customized function:')
         for class_name, obj in downloaders_list:
-            if info.get('extractor') == class_name.lower().replace('downloader', ''):
+            if info.get('extractor').lower() == class_name.lower().replace('downloader', ''):
                 return obj(url, where_to_save=where_to_save,
                            info=info, info_file_path=info_file_path,
                            default_options=options, main_downloader_obj=main_downloader, format_data=format_data).download()

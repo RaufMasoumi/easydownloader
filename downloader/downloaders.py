@@ -118,3 +118,11 @@ class YoutubeDownloader:
             print('file downloaded successfully')
             return self.info, code
 
+
+class InstagramDownloader(YoutubeDownloader):
+    def get_options(self):
+        options = super().get_options()
+        options.update({
+            'outtmpl': str(BASE_DIR / os.path.join(self.where_to_save, 'instagram-%(title)s.%(ext)s')),
+        })
+        return options
