@@ -11,11 +11,16 @@ class AllowedExtractorManager(models.Manager):
 
 class Content(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=300, blank=True, null=True)
+    info_id = models.CharField(max_length=300)
+    info_file_path = models.FilePathField(path='info/')
+    url = models.URLField(blank=True, null=True)
+    title = models.CharField(max_length=300, blank=True, null=True)
     download_url = models.URLField(blank=True, null=True)
     download_path = models.FilePathField(path='temp/', blank=True, null=True)
     processed_at = models.DateTimeField(auto_now_add=True)
     expiration_date = models.DateTimeField(blank=True, null=True)
+    successful = models.BooleanField(default=False)
+    expired = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return f'{self.pk} content'
