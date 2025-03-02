@@ -1,10 +1,49 @@
 from config.settings import BASE_DIR
 import os
 import yt_dlp
+from yt_dlp.utils import (ExtractorError, EntryNotInPlaylist, ReExtractInfo, DownloadError, variadic)
 from PIL import Image
+import contextlib
+import fileinput
+import json
 
 
-class ThumbnailEditedYoutubeDL(yt_dlp.YoutubeDL):
+class CustomYoutubeDL(yt_dlp.YoutubeDL):
+    def __download_wrapper(self, *args, **kwargs):
+        return self._YoutubeDL__download_wrapper(*args, **kwargs)
+
+    def download_with_info_file(self, info_filename, tried_to_refresh_info=False):
+        with contextlib.closing(fileinput.FileInput(
+                [info_filename], mode='r',
+                openhook=fileinput.hook_encoded('utf-8'))) as f:
+            # FileInput doesn't have a read method, we can't call json.load
+            infos = [self.sanitize_info(info, self.params.get('clean_infojson', True))
+                     for info in variadic(json.loads('\n'.join(f)))]
+        for info in infos:
+            try:
+                self.__download_wrapper(self.process_ie_result)(info, download=True)
+            except (DownloadError, EntryNotInPlaylist, ReExtractInfo) as e:
+                if not isinstance(e, EntryNotInPlaylist):
+                    self.to_stderr('\r')
+                webpage_url = info.get('webpage_url')
+                if webpage_url is None:
+                    raise
+                self.report_warning(f'The info failed to download: {e}; trying with URL {webpage_url}')
+                # modified
+                # refreshing the info file
+                if not tried_to_refresh_info:
+                    new_info = self.extract_info(webpage_url, download=False)
+                    with open(info_filename, 'w') as info_file:
+                        json.dump(self.sanitize_info(new_info), info_file)
+                        return self.download_with_info_file(info_filename, tried_to_refresh_info=True)
+                else:
+                    self.download([webpage_url])
+
+            except ExtractorError as e:
+                self.report_error(e)
+        return self._download_retcode
+
+class ThumbnailEditedYoutubeDL(CustomYoutubeDL):
     # making the thumbnails 1:1
     def _write_thumbnails(self, label, info_dict, filename, thumb_filename_base=None):
         ret = super()._write_thumbnails(label, info_dict, filename, thumb_filename_base)
@@ -106,7 +145,7 @@ class YoutubeDownloader:
         print('this is the customized download function for youtube!')
         code = 1
         print(self.get_options())
-        youtubedl = yt_dlp.YoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
+        youtubedl = CustomYoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
         with youtubedl(self.get_options()) as downloader:
             print('downloading:')
             if self.info_file_path:
@@ -116,7 +155,7 @@ class YoutubeDownloader:
                 if self.info:
                     code = 0
             print('file downloaded successfully')
-            return self.info, code
+            return self.info, code, downloader
 
 
 class InstagramDownloader(YoutubeDownloader):
