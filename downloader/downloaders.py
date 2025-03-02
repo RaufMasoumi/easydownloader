@@ -6,6 +6,7 @@ from PIL import Image
 import contextlib
 import fileinput
 import json
+from datetime import datetime
 
 
 class CustomYoutubeDL(yt_dlp.YoutubeDL):
@@ -28,15 +29,16 @@ class CustomYoutubeDL(yt_dlp.YoutubeDL):
                 webpage_url = info.get('webpage_url')
                 if webpage_url is None:
                     raise
-                self.report_warning(f'The info failed to download: {e}; trying with URL {webpage_url}')
                 # modified
                 # refreshing the info file
                 if not tried_to_refresh_info:
+                    self.report_warning(f'It seems the info file data is expired; trying to refresh the info file')
                     new_info = self.extract_info(webpage_url, download=False)
                     with open(info_filename, 'w') as info_file:
                         json.dump(self.sanitize_info(new_info), info_file)
                         return self.download_with_info_file(info_filename, tried_to_refresh_info=True)
                 else:
+                    self.report_warning(f'The info failed to download: {e}; trying with URL {webpage_url}')
                     self.download([webpage_url])
 
             except ExtractorError as e:
@@ -133,8 +135,9 @@ class YoutubeDownloader:
         return format_sort_list
 
     def get_options(self):
+        format_time = datetime.now().strftime('%Y%m%d%H%M%S')
         self.options.update({
-            'outtmpl': str(BASE_DIR / os.path.join(self.where_to_save, 'youtube-%(title)s.%(ext)s')),
+            'outtmpl': str(BASE_DIR / os.path.join(self.where_to_save, f'%(title)s-{format_time}.%(ext)s')),
             'format': self.get_format(),
             'format_sort': self.get_format_sort(),
         })
@@ -159,9 +162,4 @@ class YoutubeDownloader:
 
 
 class InstagramDownloader(YoutubeDownloader):
-    def get_options(self):
-        options = super().get_options()
-        options.update({
-            'outtmpl': str(BASE_DIR / os.path.join(self.where_to_save, 'instagram-%(title)s.%(ext)s')),
-        })
-        return options
+    pass
