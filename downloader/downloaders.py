@@ -66,7 +66,13 @@ class ThumbnailEditedYoutubeDL(CustomYoutubeDL):
                     pass
         return ret
 
-class YoutubeDownloader:
+
+class BaseDownloader:
+    is_downloader = True
+    extractor = ''
+
+class YoutubeDownloader(BaseDownloader):
+    extractor = 'youtube'
 
     def __init__(
             self, url, where_to_save='temp', info=None, info_file_path=None, default_options=None,
@@ -162,4 +168,4 @@ class YoutubeDownloader:
 
 
 class InstagramDownloader(YoutubeDownloader):
-    pass
+    extractor = 'instagram'

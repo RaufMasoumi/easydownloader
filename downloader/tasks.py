@@ -10,7 +10,10 @@ import inspect
 import re
 import os
 
-downloaders_list = inspect.getmembers(downloaders, inspect.isclass)
+downloaders_list = [(name, obj, getattr(obj, 'extractor', ''))
+                    for name, obj in inspect.getmembers(downloaders, inspect.isclass)
+                    if getattr(obj, 'is_downloader', False)]
+downloaders_dict = {extractor: downloader_obj for _, downloader_obj, extractor in downloaders_list}
 allowed_extractors_regexes_list = [extractor.regex for extractor in AllowedExtractor.objects.active_extractors()]
 
 @shared_task
@@ -76,7 +79,6 @@ def download_content(url, where_to_save='temp', format_data=None):
         related_downloaded_contents = Content.objects.filter(url=url)
         if related_downloaded_contents.exists():
             info_file_path = related_downloaded_contents.order_by('-processed_at').first().info_file_path
-            print(info_file_path)
             with open(info_file_path) as info_file:
                 info = json.load(info_file)
         else:
@@ -85,11 +87,16 @@ def download_content(url, where_to_save='temp', format_data=None):
             with open(info_file_path, 'w') as info_file:
                 json.dump(downloader.sanitize_info(info), info_file)
         print('checking the customized function:')
-        for class_name, obj in downloaders_list:
-            if info.get('extractor').lower() == class_name.lower().replace('downloader', ''):
-                info, error_code, downloader = obj(url, where_to_save=where_to_save,
-                           info=info, info_file_path=info_file_path,
-                           default_options=options, main_downloader_obj=downloader, format_data=format_data).download()
+        if info.get('extractor').lower() in downloaders_dict.keys():
+            downloader_class_obj = downloaders_dict[info.get('extractor').lower()]
+            info, error_code, downloader = downloader_class_obj(url, where_to_save=where_to_save,
+                                               info=info, info_file_path=info_file_path,
+                                               default_options=options, main_downloader_obj=downloader, format_data=format_data).download()
+        # for class_name, obj in downloaders_list:
+        #     if info.get('extractor').lower() == class_name.lower().replace('downloader', ''):
+        #         info, error_code, downloader = obj(url, where_to_save=where_to_save,
+        #                    info=info, info_file_path=info_file_path,
+        #                    default_options=options, main_downloader_obj=downloader, format_data=format_data).download()
         else:
             if error_code:
                 print('there is no customized function, downloading with the defaults:')
