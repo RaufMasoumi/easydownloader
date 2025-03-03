@@ -1,8 +1,12 @@
 from django.db import models
-from datetime import timedelta
+from datetime import datetime, timedelta
 import uuid
 # Create your models here.
 
+
+class ContentManager(models.Manager):
+    def expired_contents(self):
+        return self.filter(expiration_date__lte=datetime.now())
 
 class AllowedExtractorManager(models.Manager):
     def active_extractors(self):
@@ -21,6 +25,7 @@ class Content(models.Model):
     expiration_date = models.DateTimeField(blank=True, null=True)
     successful = models.BooleanField(default=False)
     expired = models.BooleanField(blank=True, default=False)
+    objects = ContentManager()
 
     def __str__(self):
         return f'{self.pk} content'

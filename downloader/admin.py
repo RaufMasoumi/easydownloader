@@ -4,8 +4,8 @@ from .models import Content, AllowedExtractor
 
 
 class ContentAdmin(admin.ModelAdmin):
-    fields = ['name', 'download_url', 'download_path']
-    list_display = ['pk', 'processed_at', 'expiration_date']
+    fields = ['title', 'info_id', 'info_file_path', 'url', 'download_url', 'download_path', 'successful', 'expired', 'expiration_date']
+    list_display = ['title', 'processed_at', 'successful', 'expired']
 
 
 admin.site.register(Content, ContentAdmin)
