@@ -36,7 +36,7 @@ class CustomYoutubeDL(yt_dlp.YoutubeDL):
                     new_info = self.extract_info(webpage_url, download=False)
                     with open(info_filename, 'w') as info_file:
                         json.dump(self.sanitize_info(new_info), info_file)
-                        return self.download_with_info_file(info_filename, tried_to_refresh_info=True)
+                    return self.download_with_info_file(info_filename, tried_to_refresh_info=True)
                 else:
                     self.report_warning(f'The info failed to download: {e}; trying with URL {webpage_url}')
                     self.download([webpage_url])
