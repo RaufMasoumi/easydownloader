@@ -12,6 +12,7 @@ django-crispy-forms = "*"
 crispy-bootstrap4 = "*"
 yt-dlp = {extras = ["default"], version = "*"}
 pillow = "*"
+djangorestframework = "*"
 
 [dev-packages]
 

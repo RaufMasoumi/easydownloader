@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # local
     'home.apps.HomeConfig',
     'downloader.apps.DownloaderConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
