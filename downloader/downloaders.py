@@ -155,17 +155,37 @@ class YoutubeDownloader(BaseDownloader):
         code = 1
         print(self.get_options())
         youtubedl = CustomYoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
-        with youtubedl(self.get_options()) as downloader:
+        with youtubedl(self.get_options()) as ytdl:
             print('downloading:')
             if self.info_file_path:
-                code = downloader.download_with_info_file(self.info_file_path)
+                code = ytdl.download_with_info_file(self.info_file_path)
             else:
-                self.info = downloader.extract_info(self.url, download=True)
+                self.info = ytdl.extract_info(self.url, download=True)
                 if self.info:
                     code = 0
             print('file downloaded successfully')
-            return self.info, code, downloader
+            return code, self.info, ytdl
 
 
 class InstagramDownloader(YoutubeDownloader):
     extractor = 'instagram'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
