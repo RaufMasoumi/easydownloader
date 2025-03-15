@@ -109,6 +109,11 @@ def download_content(url, where_to_save='temp', format_data=None):
 
 
 class MainDownloader:
+    """
+    MainDownloader class is a class-based downloader that manages the different parts of the download process neatly and separately, making the process standalone and easy to set up for celery and asynchronization.
+    The primary method is the run method; it runs the whole process with the proper order. Use it if you do not want to override the process.
+    Raises DownloadProcessError for any failure during download process with the proper massage.
+    """
     download_dir = 'temp'
     default_options = {
         'format': 'bestvideo+bestaudio/best/best*',
@@ -126,6 +131,7 @@ class MainDownloader:
             }
         ]
     }
+
     def __init__(self, url, detail=None, options=None):
         self.url = url
         self.detail = detail or {}
@@ -142,8 +148,15 @@ class MainDownloader:
         )
         self.options = options
 
-
+    @raise_download_process_error
     def get_custom_downloader(self, main_ytdl_obj):
+        """
+        Searches for the custom downloader of the extractor,
+        initializes it with the proper data and returns it or returns None.
+        Sets the has_custom_downloader attribute.
+        :param main_ytdl_obj:
+        :return:
+        """
         info = self.extract_info()
         if not self.has_custom_downloader:
             if info.get('extractor').lower() in DOWNLOADERS_DICT.keys():
@@ -157,7 +170,15 @@ class MainDownloader:
         else:
             return None
 
+    @raise_download_process_error
     def extract_info(self, ytdl_obj=None):
+        """
+        Returns url info if exists (using whether info attribute or a related content),
+        Or extracts url info and saves it in a json file.
+        Sets info and info_file_path attributes.
+        :param ytdl_obj:
+        :return:
+        """
         if getattr(self, 'info', None):
             return self.info
 
@@ -174,8 +195,15 @@ class MainDownloader:
 
         return self.info
 
-
+    @raise_download_process_error
     def download(self, ytdl_obj):
+        """
+        Downloads the content of the url using custom downloader or default download functionality.
+        Sets downloaded_successfully attribute.
+        Returns error code and the YoutubeDL object.
+        :param ytdl_obj:
+        :return error_code, ytdl_obj:
+        """
         error_code = 1
         if self.downloaded_successfully:
             return 0
@@ -188,8 +216,13 @@ class MainDownloader:
         self.downloaded_successfully = not error_code
         return error_code, ytdl_obj
 
-
+    @raise_download_process_error
     def get_content_obj(self, ytdl_obj):
+        """
+        Creates a new content obj for the process and returns it.
+        :param ytdl_obj:
+        :return:
+        """
         if getattr(self, 'content_obj', None):
             return self.content_obj
 
@@ -210,6 +243,14 @@ class MainDownloader:
 
     @raise_download_process_error
     def run(self, download=True):
+        """
+        Runs the download process properly. No need to run any other method.
+        Returns error code, extracted info, content object and YoutubeDL object.
+        Raises DownloadProcessError for any failure in process.
+        :param download:
+        :return:
+        :raises DownloadProcessError:
+        """
         with CustomYoutubeDL(self.options) as main_ytdl_obj:
             info = self.extract_info(main_ytdl_obj)
             error_code, ytdl_obj = self.download(main_ytdl_obj) if download else (0, main_ytdl_obj)
