@@ -1,5 +1,9 @@
-from .models import Content
+from errno import errorcode
+
 from celery import shared_task
+from .models import Content
+from .main_downloader import MainDownloader
+from .downloaders import CustomYoutubeDL
 import os
 
 
@@ -7,6 +11,18 @@ import os
 def test_task(word: str):
     return f'hello {word}'
 
+@shared_task
+def async_extract_info(*args, **kwargs):
+    downloader = MainDownloader(*args, **kwargs)
+    with CustomYoutubeDL(downloader.options) as main_ytdl_obj:
+        info = downloader.extract_info(main_ytdl_obj)
+    return info
+
+@shared_task
+def async_download_content(*args, **kwargs):
+    downloader = MainDownloader(*args, **kwargs)
+    error_code, info, content, ytdl_obj = downloader.run()
+    return error_code
 
 def delete_expired_content_files():
     expired_but_not_processed_contents = Content.objects.expired_contents().filter(expired=False)

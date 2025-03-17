@@ -8,6 +8,9 @@ class ContentManager(models.Manager):
     def expired_contents(self):
         return self.filter(expiration_date__lte=datetime.now())
 
+    def valid_contents(self):
+        return self.filter(successful=True, expiration_date__gt=datetime.now())
+
 class AllowedExtractorManager(models.Manager):
     def active_extractors(self):
         return self.filter(active=True)

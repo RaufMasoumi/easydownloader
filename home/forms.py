@@ -1,7 +1,7 @@
 from django import forms
 
 
-class LinkForm(forms.Form):
+class URLForm(forms.Form):
     # video format pattern
     # [type] [file extension] [resolution(height by p)] [aspect ratio] [frame rate]
     # audio format pattern
@@ -45,8 +45,8 @@ class LinkForm(forms.Form):
         'VIDEO': {'video' + ' ' + k: v for k, v in VIDEO_FORMATS.items()},
         'AUDIO': {'audio' + ' ' + k: v for k, v in AUDIO_FORMATS.items()},
     }
-    link = forms.CharField(max_length=400)
-    format = forms.ChoiceField(choices=CONTENT_DETAIL_CHOICES, initial='mp4 360p')
+    url = forms.CharField(max_length=400)
+    detail = forms.ChoiceField(choices=CONTENT_DETAIL_CHOICES, initial='mp4 360p')
 
     # def translate_format(self, default='bestvideo*/best'):
     #     translated_format = default

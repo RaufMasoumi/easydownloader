@@ -132,16 +132,18 @@ class MainDownloader:
         ]
     }
 
-    def __init__(self, url, detail=None, options=None):
+    def __init__(
+            self, url, detail=None, custom_downloader=None,
+            content_obj=None, info=None, info_file_path=None, options=None
+    ):
         self.url = url
         self.detail = detail or {}
         self.has_custom_downloader = False
-        self.custom_downloader = None
+        self.custom_downloader = custom_downloader
         self.downloaded_successfully = False
-        self.content_obj = None
-        self.info = None
-        self.info_file_path = None
-        self.content = None
+        self.content_obj = content_obj
+        self.info = info
+        self.info_file_path = info_file_path
         options = options or dict()
         options.update(
             self.default_options
@@ -157,7 +159,7 @@ class MainDownloader:
         :param main_ytdl_obj:
         :return:
         """
-        info = self.extract_info()
+        info = self.extract_info(main_ytdl_obj)
         if not self.has_custom_downloader:
             if info.get('extractor').lower() in DOWNLOADERS_DICT.keys():
                 self.custom_downloader = DOWNLOADERS_DICT[info.get('extractor').lower()]
@@ -171,7 +173,7 @@ class MainDownloader:
             return None
 
     @raise_download_process_error
-    def extract_info(self, ytdl_obj=None):
+    def extract_info(self, ytdl_obj):
         """
         Returns url info if exists (using whether info attribute or a related content),
         Or extracts url info and saves it in a json file.
@@ -226,7 +228,7 @@ class MainDownloader:
         if getattr(self, 'content_obj', None):
             return self.content_obj
 
-        info = self.extract_info()
+        info = self.extract_info(ytdl_obj)
         download_path = ytdl_obj.prepare_filename(info)
         download_path = re.sub(
             r'\.[^.\\]+$', f'.{self.detail['extension']}', download_path
