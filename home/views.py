@@ -2,14 +2,14 @@ from django.shortcuts import render, reverse
 from django.urls import reverse_lazy
 from django.http import FileResponse
 from django.views.generic import FormView
-from downloader.tasks import download_content
+from downloader.main_downloader import download_content
 from downloader.views import DownloadedContentResponseView
-from .forms import LinkForm
+from .forms import URLForm
 # Create your views here.
 
 
 class ProcessLinkFormView(FormView):
-    form_class = LinkForm
+    form_class = URLForm
     success_url = reverse_lazy('home')
     template_name = 'home/home.html'
 
