@@ -22,16 +22,16 @@ def async_extract_info(*args, **kwargs):
 def async_process_url(*args, **kwargs):
     kwargs = update_kwargs_content_obj(kwargs, ['content_obj', 'pre_created_content_obj'])
     downloader = MainDownloader(*args, **kwargs)
-    error_code, info, content, ytdl_obj = downloader.run(download=False)
-    return error_code, info, content.pk
+    code, info, content, ytdl_obj = downloader.run(download=False)
+    return code, info, content.pk
 
 
 @shared_task
 def async_download_content(*args, **kwargs):
     kwargs = update_kwargs_content_obj(kwargs, ['content_obj', 'pre_created_content_obj'])
     downloader = MainDownloader(*args, **kwargs)
-    error_code, info, content, ytdl_obj = downloader.run(download=True)
-    return error_code, info, content.pk
+    code, info, content, ytdl_obj = downloader.run(download=True)
+    return code, info, content.pk
 
 
 def delete_expired_content_files():

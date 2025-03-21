@@ -78,7 +78,7 @@ class YoutubeDownloader(BaseDownloader):
 
     def __init__(
             self, url, where_to_save='temp', info=None, info_file_path=None, default_options=None,
-            main_downloader_obj=None, format_data=None
+            main_downloader_obj=None, detail=None
     ):
         self.url = url
         self.where_to_save = where_to_save
@@ -86,42 +86,42 @@ class YoutubeDownloader(BaseDownloader):
         self.info_file_path = info_file_path
         self.options = default_options if default_options else {}
         self.main_downloader_obj = main_downloader_obj
-        self.format_data = format_data if format_data else {}
-        self.is_video = True if self.format_data.get('type') == 'video' else False
+        self.detail = detail if detail else {}
+        self.is_video = True if self.detail.get('type') == 'video' else False
 
     def get_format(self, default_format='best'):
-        if not self.format_data:
+        if not self.detail:
             return default_format
         translated_format = ''
         postprocessors = self.options.get('postprocessors', [])
         if self.is_video:
             filter_string = ''
-            if self.format_data.get('extension'):
-                filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
+            if self.detail.get('extension'):
+                filter_string += '[ext={extension}]'.format(extension=self.detail['extension'])
                 self.options.update(
                     {
-                        'merge_output_format': '/'.join([self.format_data['extension'], 'mp4', 'mkv', 'webm']),
+                        'merge_output_format': '/'.join([self.detail['extension'], 'mp4', 'mkv', 'webm']),
                     }
                 )
                 postprocessors += [{
                         'key': 'FFmpegVideoConvertor',
-                        'preferedformat': f'{self.format_data['extension']}',
+                        'preferedformat': f'{self.detail['extension']}',
                     }, ]
-            if self.format_data.get('aspect_ratio'):
-                filter_string += '[aspect_ratio={aspect_ratio}]'.format(aspect_ratio=self.format_data['aspect_ratio'])
+            if self.detail.get('aspect_ratio'):
+                filter_string += '[aspect_ratio={aspect_ratio}]'.format(aspect_ratio=self.detail['aspect_ratio'])
             translated_format += f'bestvideo{filter_string}+bestaudio/bestvideo+bestaudio/best'
 
         else:
             filter_string = ''
-            if self.format_data.get('extension'):
-                filter_string += '[ext={extension}]'.format(extension=self.format_data['extension'])
+            if self.detail.get('extension'):
+                filter_string += '[ext={extension}]'.format(extension=self.detail['extension'])
                 audio_converter_postprocessor = {
                             'key': 'FFmpegExtractAudio',
-                            'preferredcodec': f'{self.format_data["extension"]}',
+                            'preferredcodec': f'{self.detail["extension"]}',
                 }
-                if self.format_data.get('bitrate'):
+                if self.detail.get('bitrate'):
                     audio_converter_postprocessor.update({
-                        'preferredquality': f'{self.format_data["bitrate"]}',
+                        'preferredquality': f'{self.detail["bitrate"]}',
                     })
                 postprocessors += [audio_converter_postprocessor, ]
             translated_format += f'bestaudio{filter_string}/bestaudio/best'
@@ -129,17 +129,17 @@ class YoutubeDownloader(BaseDownloader):
         return translated_format
 
     def get_format_sort(self, default_sort=''):
-        if not self.format_data:
+        if not self.detail:
             return default_sort if default_sort else []
         format_sort_list = []
         if self.is_video:
-            if self.format_data.get('resolution'):
-                format_sort_list.append('height~{resolution}'.format(resolution=self.format_data['resolution']))
-            if self.format_data.get('frame_rate'):
-                format_sort_list.append('fps~{frame_rate}'.format(frame_rate=self.format_data['frame_rate']))
+            if self.detail.get('resolution'):
+                format_sort_list.append('height~{resolution}'.format(resolution=self.detail['resolution']))
+            if self.detail.get('frame_rate'):
+                format_sort_list.append('fps~{frame_rate}'.format(frame_rate=self.detail['frame_rate']))
         else:
-            if self.format_data.get('bitrate'):
-                format_sort_list.append('abr~{bitrate}'.format(bitrate=self.format_data['bitrate']))
+            if self.detail.get('bitrate'):
+                format_sort_list.append('abr~{bitrate}'.format(bitrate=self.detail['bitrate']))
         return format_sort_list
 
     def get_options(self):
@@ -157,18 +157,18 @@ class YoutubeDownloader(BaseDownloader):
         code = 1
         print(self.get_options())
         youtubedl = CustomYoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
-        with youtubedl(self.get_options()) as ytdl:
+        with youtubedl(self.get_options()) as ytdl_obj:
             print('downloading:')
             if fake:
                 code = 0
             elif self.info_file_path:
-                code = ytdl.download_with_info_file(self.info_file_path)
+                code = ytdl_obj.download_with_info_file(self.info_file_path)
             else:
-                self.info = ytdl.extract_info(self.url, download=True)
+                self.info = ytdl_obj.extract_info(self.url, download=True)
                 if self.info:
                     code = 0
             print('file downloaded successfully')
-            return code, self.info, ytdl
+            return code, self.info, ytdl_obj
 
 
 class InstagramDownloader(YoutubeDownloader):
