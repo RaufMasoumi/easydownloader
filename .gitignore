@@ -3,4 +3,5 @@ db.sqlite3
 temp/
 info/
 test.py
+celery_test.py
 info-pgKaK2C-maw.json

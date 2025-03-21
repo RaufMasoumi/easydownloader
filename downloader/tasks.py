@@ -1,5 +1,3 @@
-from errno import errorcode
-
 from celery import shared_task
 from .models import Content
 from .main_downloader import MainDownloader
@@ -11,6 +9,7 @@ import os
 def test_task(word: str):
     return f'hello {word}'
 
+
 @shared_task
 def async_extract_info(*args, **kwargs):
     downloader = MainDownloader(*args, **kwargs)
@@ -18,11 +17,22 @@ def async_extract_info(*args, **kwargs):
         info = downloader.extract_info(main_ytdl_obj)
     return info
 
+
+@shared_task
+def async_process_url(*args, **kwargs):
+    kwargs = update_kwargs_content_obj(kwargs, ['content_obj', 'pre_created_content_obj'])
+    downloader = MainDownloader(*args, **kwargs)
+    error_code, info, content, ytdl_obj = downloader.run(download=False)
+    return error_code, info, content.pk
+
+
 @shared_task
 def async_download_content(*args, **kwargs):
+    kwargs = update_kwargs_content_obj(kwargs, ['content_obj', 'pre_created_content_obj'])
     downloader = MainDownloader(*args, **kwargs)
-    error_code, info, content, ytdl_obj = downloader.run()
-    return error_code
+    error_code, info, content, ytdl_obj = downloader.run(download=True)
+    return error_code, info, content.pk
+
 
 def delete_expired_content_files():
     expired_but_not_processed_contents = Content.objects.expired_contents().filter(expired=False)
@@ -36,3 +46,15 @@ def delete_expired_content_files():
         content.expired = True
         objs.append(content)
     Content.objects.bulk_update(objs, ['download_path', 'expired'])
+
+
+def update_kwargs_content_obj(kwargs, update_fields):
+    for field in update_fields:
+        if kwargs.get(field):
+            try:
+                obj = Content.objects.get(pk=kwargs[field])
+            except Content.DoesNotExist:
+                pass
+            else:
+                kwargs[field] = obj
+    return kwargs
