@@ -45,6 +45,7 @@ class CustomYoutubeDL(yt_dlp.YoutubeDL):
                 self.report_error(e)
         return self._download_retcode
 
+
 class ThumbnailEditedYoutubeDL(CustomYoutubeDL):
     # making the thumbnails 1:1
     def _write_thumbnails(self, label, info_dict, filename, thumb_filename_base=None):
@@ -70,6 +71,7 @@ class ThumbnailEditedYoutubeDL(CustomYoutubeDL):
 class BaseDownloader:
     is_downloader = True
     extractor = ''
+
 
 class YoutubeDownloader(BaseDownloader):
     extractor = 'youtube'
@@ -150,14 +152,16 @@ class YoutubeDownloader(BaseDownloader):
         self.options.get('postprocessors', []).reverse()
         return self.options
 
-    def download(self):
+    def download(self, fake=False):
         print('this is the customized download function for youtube!')
         code = 1
         print(self.get_options())
         youtubedl = CustomYoutubeDL if self.is_video else ThumbnailEditedYoutubeDL
         with youtubedl(self.get_options()) as ytdl:
             print('downloading:')
-            if self.info_file_path:
+            if fake:
+                code = 0
+            elif self.info_file_path:
                 code = ytdl.download_with_info_file(self.info_file_path)
             else:
                 self.info = ytdl.extract_info(self.url, download=True)

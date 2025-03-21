@@ -15,12 +15,14 @@ DOWNLOADERS_LIST = [(name, obj, getattr(obj, 'extractor', ''))
                     if getattr(obj, 'is_downloader', False)]
 DOWNLOADERS_DICT = {extractor: downloader_obj for _, downloader_obj, extractor in DOWNLOADERS_LIST}
 
+
 class DownloadProcessError(Exception):
 
     def __init__(self, msg=None):
         self.msg = msg if msg else "An error occurred while downloading the content!"
         self.msg += "  Please try again or enter another link."
         super().__init__(self.msg)
+
 
 def raise_download_process_error(func):
     def wrapper(*args, **kwargs):
@@ -43,7 +45,7 @@ def raise_download_process_error(func):
             raise DownloadProcessError() from error
 
         else:
-            return  return_values
+            return return_values
 
     return wrapper
 
@@ -121,6 +123,7 @@ class MainDownloader:
         'allowed_extractors': allowed_extractors_regexes_list,
         'verbos': True,
         'writethumbnail': True,
+        # 'cookiesfrombrowser': ('chrome', ),
         'postprocessors': [
             {
                 'key': 'FFmpegMetadata',
@@ -134,14 +137,15 @@ class MainDownloader:
 
     def __init__(
             self, url, detail=None, custom_downloader=None,
-            content_obj=None, info=None, info_file_path=None, options=None
+            content_obj=None, pre_created_content_obj=None, info=None, info_file_path=None, options=None
     ):
         self.url = url
         self.detail = detail or {}
-        self.has_custom_downloader = False
+        self.has_custom_downloader = True if custom_downloader else False
         self.custom_downloader = custom_downloader
         self.downloaded_successfully = False
         self.content_obj = content_obj
+        self.pre_created_content_obj = pre_created_content_obj
         self.info = info
         self.info_file_path = info_file_path
         options = options or dict()
@@ -182,6 +186,10 @@ class MainDownloader:
         :return:
         """
         if getattr(self, 'info', None):
+            if not getattr(self, 'info_file_path', None):
+                self.info_file_path = f'info/info-{self.info['id']}.json'
+                with open(self.info_file_path, 'w') as info_file:
+                    json.dump(ytdl_obj.sanitize_info(self.info), info_file)
             return self.info
 
         related_downloaded_contents = Content.objects.filter(url=self.url)
@@ -198,12 +206,13 @@ class MainDownloader:
         return self.info
 
     @raise_download_process_error
-    def download(self, ytdl_obj):
+    def download(self, ytdl_obj, fake=False):
         """
         Downloads the content of the url using custom downloader or default download functionality.
         Sets downloaded_successfully attribute.
         Returns error code and the YoutubeDL object.
         :param ytdl_obj:
+        :param fake:
         :return error_code, ytdl_obj:
         """
         error_code = 1
@@ -211,10 +220,9 @@ class MainDownloader:
             return 0
         custom_downloader = self.get_custom_downloader(ytdl_obj)
         if custom_downloader:
-            custom_downloader = self.get_custom_downloader(ytdl_obj)
-            error_code, info, ytdl_obj = custom_downloader.download()
+            error_code, info, ytdl_obj = custom_downloader.download(fake=fake)
         else:
-            error_code = ytdl_obj.download_with_info_file(self.info_file_path)
+            error_code = ytdl_obj.download_with_info_file(self.info_file_path) if not fake else 0
         self.downloaded_successfully = not error_code
         return error_code, ytdl_obj
 
@@ -233,29 +241,38 @@ class MainDownloader:
         download_path = re.sub(
             r'\.[^.\\]+$', f'.{self.detail['extension']}', download_path
         ) if self.detail.get('extension') else download_path
-        self.content_obj = Content.objects.create(
-            info_id=info['id'],
-            info_file_path=self.info_file_path,
-            url=info.get('original_url') or info.get('webpage_url'),
-            title=info.get('title'),
-            download_path=download_path,
-            successful=self.downloaded_successfully,
-        )
+        data = {
+            'info_id': info.get('id'),
+            'info_file_path': self.info_file_path,
+            'url': info.get('original_url') or info.get('webpage_url'),
+            'title': info.get('title'),
+            'download_path': download_path,
+            'downloaded_successfully': self.downloaded_successfully
+        }
+        if self.pre_created_content_obj:
+            for k, v in data.items():
+                setattr(self.pre_created_content_obj, k, v)
+            self.pre_created_content_obj.save()
+            self.content_obj = self.pre_created_content_obj
+        else:
+            self.content_obj = Content.objects.create(**data)
         return self.content_obj
 
     @raise_download_process_error
-    def run(self, download=True):
+    def run(self, main_ytdl_obj=None, download=True):
         """
         Runs the download process properly. No need to run any other method.
         Returns error code, extracted info, content object and YoutubeDL object.
         Raises DownloadProcessError for any failure in process.
+        :param main_ytdl_obj:
         :param download:
         :return:
         :raises DownloadProcessError:
         """
-        with CustomYoutubeDL(self.options) as main_ytdl_obj:
+        main_ytdl_obj = CustomYoutubeDL(self.options) if not main_ytdl_obj else main_ytdl_obj
+        with main_ytdl_obj:
             info = self.extract_info(main_ytdl_obj)
-            error_code, ytdl_obj = self.download(main_ytdl_obj) if download else (0, main_ytdl_obj)
+            error_code, ytdl_obj = self.download(main_ytdl_obj, fake=not download)
             content = self.get_content_obj(ytdl_obj)
         return error_code, info, content, ytdl_obj
 
