@@ -9,7 +9,17 @@ class ContentManager(models.Manager):
         return self.filter(expiration_date__lte=datetime.now())
 
     def valid_contents(self):
-        return self.filter(successful=True, expiration_date__gt=datetime.now())
+        return self.filter(expiration_date__gt=datetime.now())
+
+    def downloaded_contents(self):
+        return self.filter(downloaded_successfully=True)
+
+    def downloaded_valid_contents(self):
+        return self.filter(downloaded_successfully=True, expiration_date__gt=datetime.now())
+
+    def downloaded_expired_contents(self):
+        return self.filter(downloaded_successfully=True, expiration_date__lte=datetime.now())
+
 
 class AllowedExtractorManager(models.Manager):
     def active_extractors(self):
@@ -26,7 +36,7 @@ class Content(models.Model):
     download_path = models.FilePathField(path='temp/', blank=True, null=True)
     processed_at = models.DateTimeField(auto_now_add=True)
     expiration_date = models.DateTimeField(blank=True, null=True)
-    successful = models.BooleanField(default=False)
+    downloaded_successfully = models.BooleanField(default=False)
     expired = models.BooleanField(blank=True, default=False)
     objects = ContentManager()
 
