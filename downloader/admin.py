@@ -5,7 +5,7 @@ from .models import Content, AllowedExtractor
 
 class ContentAdmin(admin.ModelAdmin):
     fields = [
-        'title', 'info_id', 'info_file_path', 'url', 'download_url',
+        'title', 'celery_download_task_id', 'info_id', 'info_file_path', 'url', 'download_url',
         'download_path', 'downloaded_successfully', 'expired', 'expiration_date'
     ]
     list_display = ['title', 'processed_at', 'downloaded_successfully', 'expired']

@@ -28,6 +28,7 @@ class AllowedExtractorManager(models.Manager):
 
 class Content(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    celery_download_task_id = models.CharField(max_length=300, blank=True, null=True)
     info_id = models.CharField(max_length=300)
     info_file_path = models.FilePathField(path='info/')
     url = models.URLField(blank=True, null=True)

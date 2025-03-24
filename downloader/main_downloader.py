@@ -200,7 +200,7 @@ class MainDownloader:
             self.info_file_path = f'info/info-{self.info['id']}.json'
             with open(self.info_file_path, 'w') as info_file:
                 json.dump(ytdl_obj.sanitize_info(self.info), info_file)
-
+        self.info['info_file_path'] = self.info_file_path
         return self.info
 
     @raise_download_process_error
