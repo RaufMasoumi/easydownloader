@@ -1,9 +1,8 @@
 from django.urls import path
-from .views import ContentInfoAPIView, GetDownloadableContentAPIView
+from .views import GetContentInfoAPIView, DownloadContentAPIView
 
 
 urlpatterns = [
-    path('info/', ContentInfoAPIView.as_view(), name='info'),
-    path('download/<uuid:pk>/', GetDownloadableContentAPIView.as_view(), name='get-downloadable-content-api'),
-    # path('info/', GetContentInfoAPIView.as_view(), name='get-content-info-api'),
+    path('getinfo/', GetContentInfoAPIView.as_view(), name='get-content-info-api'),
+    path('download/<uuid:pk>/', DownloadContentAPIView.as_view(), name='download-content-api'),
 ]
