@@ -20,7 +20,9 @@ class DownloadProcessError(Exception):
 
     def __init__(self, msg=None):
         self.msg = msg if msg else "An error occurred while downloading the content!"
-        self.msg += "  Please try again or enter another link."
+        try_again = "  Please try again or enter another link."
+        if not self.msg.endswith(try_again):
+            self.msg += "  Please try again or enter another link."
         super().__init__(self.msg)
 
 
