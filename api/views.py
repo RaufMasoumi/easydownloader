@@ -14,6 +14,7 @@ from .serializers import URLDetailSerializer, ContentInfoSerializer
 
 
 class GetContentInfoAPIView(APIView):
+    serializer_class = ContentInfoSerializer
 
     def get(self, request, *args, data=None, **kwargs):
         data = data if data else request.query_params

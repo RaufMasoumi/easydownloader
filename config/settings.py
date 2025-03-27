@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'django_celery_results',
     'crispy_forms',
     'crispy_bootstrap4',
+    'drf_spectacular',
+    # 'drf_spectacular_sidecar',
 
     # local
     'home.apps.HomeConfig',
@@ -145,3 +147,10 @@ CELERY_RESULT_EXTENDED = True
 
 # crispy
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
+# rest framework
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
