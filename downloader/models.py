@@ -38,7 +38,7 @@ class Content(models.Model):
     resolution = models.IntegerField(blank=True, null=True, default=360)
     frame_rate = models.IntegerField(blank=True, null=True)
     aspect_ratio = models.IntegerField(blank=True, null=True)
-    bitrate = models.IntegerField(blank=True, null=True, default=400)
+    audio_bitrate = models.IntegerField(blank=True, null=True, default=400)
     download_url = models.URLField(blank=True, null=True)
     download_path = models.FilePathField(path='temp/', blank=True, null=True)
     processed_at = models.DateTimeField(auto_now_add=True)
