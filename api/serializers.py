@@ -30,7 +30,7 @@ class URLDetailSerializer(serializers.Serializer):
     frame_rate = serializers.IntegerField(required=False)
     aspect_ratio = serializers.IntegerField(required=False)
     # audio related detail
-    bitrate = serializers.IntegerField(required=False, default=400)
+    audio_bitrate = serializers.IntegerField(required=False, default=400)
 
     def validate_resolution(self, value):
         valid_resolution_range = [100, 1080]
@@ -38,10 +38,10 @@ class URLDetailSerializer(serializers.Serializer):
             raise serializers.ValidationError('Incorrect resolution! it must be in 100-1080 range!')
         return value
 
-    def validate_bitrate(self, value):
+    def validate_audio_bitrate(self, value):
         valid_bitrate_range = [100, 400]
         if value < min(valid_bitrate_range) or value > max(valid_bitrate_range):
-            raise serializers.ValidationError('Incorrect bitrate! it must be in 100-400 range!')
+            raise serializers.ValidationError('Incorrect audio bitrate! it must be in 100-400 range!')
         return value
 
     def validate(self, data):
@@ -65,19 +65,19 @@ class ContentInfoSerializer(serializers.Serializer):
     pk = serializers.UUIDField()
     url = serializers.URLField(max_length=400)
     title = serializers.CharField(max_length=300)
-    duration = serializers.TimeField(format='%H:%M:%S', required=False, allow_null=True)
-    duration_string = serializers.CharField(max_length=50)
+    # duration = serializers.TimeField(format='%H:%M:%S', required=False, allow_null=True)
+    duration = serializers.CharField(max_length=50)
     thumbnail_url = serializers.URLField(max_length=400)
     webpage_url_domain = serializers.CharField(max_length=300)
     file_size = serializers.CharField(max_length=100, required=False, allow_null=True)
-    upload_date = serializers.DateTimeField(format='%Y-%m-%d', required=False, allow_null=True)
-    upload_date_string = serializers.CharField(max_length=100)
+    # upload_date = serializers.DateTimeField(format='%Y-%m-%d', required=False, allow_null=True)
+    upload_date = serializers.CharField(max_length=100, required=False)
     description = serializers.CharField(required=False, allow_null=True, max_length=500)
     track = serializers.CharField(required=False, allow_null=True, max_length=300)
     artist = serializers.CharField(required=False, allow_null=True, max_length=300)
     album = serializers.CharField(required=False, allow_null=True,  max_length=300)
-    release_date = serializers.DateTimeField(format='%Y-%m-%d', required=False, allow_null=True)
-    release_date_string = serializers.CharField(required=False, allow_null=True, max_length=100)
+    # release_date = serializers.DateTimeField(format='%Y-%m-%d', required=False, allow_null=True)
+    release_date = serializers.CharField(required=False, allow_null=True, max_length=100)
     channel = serializers.CharField(required=False, allow_null=True, max_length=300)
     uploader = serializers.CharField(required=False, allow_null=True, max_length=300)
 

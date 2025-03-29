@@ -119,9 +119,9 @@ class YoutubeDownloader(BaseDownloader):
                             'key': 'FFmpegExtractAudio',
                             'preferredcodec': f'{self.detail["extension"]}',
                 }
-                if self.detail.get('bitrate'):
+                if self.detail.get('audio_bitrate'):
                     audio_converter_postprocessor.update({
-                        'preferredquality': f'{self.detail["bitrate"]}',
+                        'preferredquality': f'{self.detail["audio_bitrate"]}',
                     })
                 postprocessors += [audio_converter_postprocessor, ]
             translated_format += f'bestaudio{filter_string}/bestaudio/best'
@@ -138,8 +138,8 @@ class YoutubeDownloader(BaseDownloader):
             if self.detail.get('frame_rate'):
                 format_sort_list.append('fps~{frame_rate}'.format(frame_rate=self.detail['frame_rate']))
         else:
-            if self.detail.get('bitrate'):
-                format_sort_list.append('abr~{bitrate}'.format(bitrate=self.detail['bitrate']))
+            if self.detail.get('audio_bitrate'):
+                format_sort_list.append('abr~{audio_bitrate}'.format(audio_bitrate=self.detail['audio_bitrate']))
         return format_sort_list
 
     def get_options(self):
