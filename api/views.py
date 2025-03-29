@@ -5,17 +5,77 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from celery.result import AsyncResult
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiTypes
 from downloader.main_downloader import DownloadProcessError
 from downloader.tasks import async_process_url, async_download_content
 from downloader.models import Content
 from .serializers import URLDetailSerializer, ContentInfoSerializer
 
+
 # Create your views here.
 
-
 class GetContentInfoAPIView(APIView):
-    serializer_class = ContentInfoSerializer
 
+    @extend_schema(
+        operation_id='api_getinfo_get',
+        parameters=[
+            OpenApiParameter(
+                name="url",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="The URL of the content to download."
+            ),
+            OpenApiParameter(
+                name="type",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default="audio",
+                enum=["video", "audio"],
+                description="The type of content to download."
+            ),
+            OpenApiParameter(
+                name="extension",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default="mp3",
+                enum=["mp4", "mkv", "mov", "mp3", "aac", "wav"],
+                description="The output file format of the downloaded content."
+            ),
+            OpenApiParameter(
+                name="resolution",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default=360,
+                description="Resolution of the video content (as pixels). Better to pass from the list [144, 240, 360, 480, 720, 1080]."
+            ),
+            OpenApiParameter(
+                name="frame_rate",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Frame rate of the video content (as fps)."
+            ),
+            OpenApiParameter(
+                name="audio_bitrate",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default=400,
+                description="Bitrate of the audio content."
+            ),
+        ],
+        request=URLDetailSerializer,
+        responses={
+            200: ContentInfoSerializer,
+            400: OpenApiResponse(response=OpenApiTypes.STR, description="Invalid query params"),
+            502: OpenApiResponse(response=OpenApiTypes.STR, description="Any problem during info extraction process")
+        },
+        description="Get info of the given URL",
+    )
     def get(self, request, *args, data=None, **kwargs):
         data = data if data else request.query_params
         serializer = URLDetailSerializer(data=data)
@@ -33,15 +93,15 @@ class GetContentInfoAPIView(APIView):
                         'pk': content.pk,
                         'url': info.get('original_url') or info.get('webpage_url'),
                         'title': info.get('title'),
-                        'duration_string': info.get('duration_string'),
+                        'duration': info.get('duration_string'),
                         'thumbnail_url': info.get('thumbnail'),
                         'webpage_url_domain': info.get('webpage_url_domain'),
-                        'upload_date_string': info.get('upload_date'),
+                        'upload_date': info.get('upload_date'),
                         'description': make_short_description(info.get('description'), 500),
                         'track': info.get('track'),
                         'artist': info.get('artist'),
                         'album': info.get('album'),
-                        'release_date_string': info.get('release_date'),
+                        'release_date': info.get('release_date'),
                         'channel': info.get('channel'),
                         'uploader': info.get('uploader'),
                     }
@@ -53,7 +113,7 @@ class GetContentInfoAPIView(APIView):
                         )
                         content.celery_download_task_id = download_content_result.task_id
                         content.save()
-                        return Response(content_info_serializer.data)
+                        return Response(content_info_serializer.data, status=status.HTTP_200_OK)
                     else:
                         return Response(content_info_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 else:
@@ -61,12 +121,31 @@ class GetContentInfoAPIView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        operation_id="api_getinfo_post",
+        request=URLDetailSerializer,
+        responses={
+            200: ContentInfoSerializer,
+            400: OpenApiResponse(response=OpenApiTypes.STR, description="Invalid query params"),
+            502: OpenApiResponse(response=OpenApiTypes.STR, description="Any problem during info extraction process")
+        },
+        description="Get info of the given URL"
+    )
     def post(self, request, *args, **kwargs):
         return self.get(request, *args, data=request.POST, **kwargs)
 
 
 class DownloadContentAPIView(APIView):
 
+    @extend_schema(
+        operation_id="api_download_get",
+        responses={
+            200: OpenApiResponse(response=OpenApiTypes.BINARY, description='Downloaded content stream'),
+            404: OpenApiResponse(response=OpenApiTypes.STR, description='Not found content'),
+            502: OpenApiResponse(response=OpenApiTypes.STR, description='Any problem during download process')
+        },
+        description="Get the downloaded content. Waits until the download process ends or starts the download process.",
+    )
     def get(self, request, pk, *args, **kwargs):
         try:
             content = Content.objects.valid_contents().get(pk=pk)
@@ -93,6 +172,15 @@ class DownloadContentAPIView(APIView):
                     return FileResponse(open(content.download_path, 'rb'), as_attachment=True)
             return Response("Download process was unsuccessful!", status=status.HTTP_502_BAD_GATEWAY)
 
+    @extend_schema(
+        operation_id="api_download_post",
+        responses={
+            200: OpenApiResponse(response=OpenApiTypes.BINARY, description='Downloaded content stream'),
+            404: OpenApiResponse(response=OpenApiTypes.STR, description='Not found content'),
+            502: OpenApiResponse(response=OpenApiTypes.STR, description='Any problem during download process')
+        },
+        description="Get the downloaded content. Waits until the download process ends or starts the download process."
+    )
     def post(self, request, pk, *args, **kwargs):
         return self.get(request, pk, *args, **kwargs)
 

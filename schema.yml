@@ -1,11 +1,14 @@
 openapi: 3.0.3
 info:
-  title: ''
-  version: 0.0.0
+  title: EasyDownloader API
+  version: 1.0.0
+  description: Download any content easily!
 paths:
   /api/download/{id}/:
     get:
-      operationId: api_download_retrieve
+      operationId: api_download_get
+      description: Get the downloaded content. Waits until the download process ends
+        or starts the download process.
       parameters:
       - in: path
         name: id
@@ -21,9 +24,28 @@ paths:
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Downloaded content stream
+        '404':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Not found content
+        '502':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Any problem during download process
     post:
-      operationId: api_download_create
+      operationId: api_download_post
+      description: Get the downloaded content. Waits until the download process ends
+        or starts the download process.
       parameters:
       - in: path
         name: id
@@ -39,10 +61,75 @@ paths:
       - {}
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: Downloaded content stream
+        '404':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Not found content
+        '502':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Any problem during download process
   /api/getinfo/:
     get:
-      operationId: api_getinfo_retrieve
+      operationId: api_getinfo_get
+      description: Get info of the given URL
+      parameters:
+      - in: query
+        name: audio_bitrate
+        schema:
+          type: integer
+          default: 400
+        description: Bitrate of the audio content.
+      - in: query
+        name: extension
+        schema:
+          type: string
+          enum:
+          - aac
+          - mkv
+          - mov
+          - mp3
+          - mp4
+          - wav
+          default: mp3
+        description: The output file format of the downloaded content.
+      - in: query
+        name: frame_rate
+        schema:
+          type: integer
+        description: Frame rate of the video content (as fps).
+      - in: query
+        name: resolution
+        schema:
+          type: integer
+          default: 360
+        description: Resolution of the video content (as pixels). Better to pass from
+          the list [144, 240, 360, 480, 720, 1080].
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - audio
+          - video
+          default: audio
+        description: The type of content to download.
+      - in: query
+        name: url
+        schema:
+          type: string
+        description: The URL of the content to download.
+        required: true
       tags:
       - api
       security:
@@ -56,21 +143,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/ContentInfo'
           description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Invalid query params
+        '502':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Any problem during info extraction process
     post:
-      operationId: api_getinfo_create
+      operationId: api_getinfo_post
+      description: Get info of the given URL
       tags:
       - api
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ContentInfo'
+              $ref: '#/components/schemas/URLDetail'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ContentInfo'
+              $ref: '#/components/schemas/URLDetail'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ContentInfo'
+              $ref: '#/components/schemas/URLDetail'
         required: true
       security:
       - cookieAuth: []
@@ -83,152 +183,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ContentInfo'
           description: ''
-  /api/schema/:
-    get:
-      operationId: api_schema_retrieve
-      description: |-
-        OpenApi3 schema for this API. Format can be selected via content negotiation.
-
-        - YAML: application/vnd.oai.openapi
-        - JSON: application/vnd.oai.openapi+json
-      parameters:
-      - in: query
-        name: format
-        schema:
-          type: string
-          enum:
-          - json
-          - yaml
-      - in: query
-        name: lang
-        schema:
-          type: string
-          enum:
-          - af
-          - ar
-          - ar-dz
-          - ast
-          - az
-          - be
-          - bg
-          - bn
-          - br
-          - bs
-          - ca
-          - ckb
-          - cs
-          - cy
-          - da
-          - de
-          - dsb
-          - el
-          - en
-          - en-au
-          - en-gb
-          - eo
-          - es
-          - es-ar
-          - es-co
-          - es-mx
-          - es-ni
-          - es-ve
-          - et
-          - eu
-          - fa
-          - fi
-          - fr
-          - fy
-          - ga
-          - gd
-          - gl
-          - he
-          - hi
-          - hr
-          - hsb
-          - hu
-          - hy
-          - ia
-          - id
-          - ig
-          - io
-          - is
-          - it
-          - ja
-          - ka
-          - kab
-          - kk
-          - km
-          - kn
-          - ko
-          - ky
-          - lb
-          - lt
-          - lv
-          - mk
-          - ml
-          - mn
-          - mr
-          - ms
-          - my
-          - nb
-          - ne
-          - nl
-          - nn
-          - os
-          - pa
-          - pl
-          - pt
-          - pt-br
-          - ro
-          - ru
-          - sk
-          - sl
-          - sq
-          - sr
-          - sr-latn
-          - sv
-          - sw
-          - ta
-          - te
-          - tg
-          - th
-          - tk
-          - tr
-          - tt
-          - udm
-          - ug
-          - uk
-          - ur
-          - uz
-          - vi
-          - zh-hans
-          - zh-hant
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
+        '400':
           content:
-            application/vnd.oai.openapi:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/yaml:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/vnd.oai.openapi+json:
-              schema:
-                type: object
-                additionalProperties: {}
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
-          description: ''
+                type: string
+          description: Invalid query params
+        '502':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Any problem during info extraction process
 components:
   schemas:
     ContentInfo:
@@ -246,10 +212,6 @@ components:
           maxLength: 300
         duration:
           type: string
-          format: time
-          nullable: true
-        duration_string:
-          type: string
           maxLength: 50
         thumbnail_url:
           type: string
@@ -263,10 +225,6 @@ components:
           nullable: true
           maxLength: 100
         upload_date:
-          type: string
-          format: date-time
-          nullable: true
-        upload_date_string:
           type: string
           maxLength: 100
         description:
@@ -287,10 +245,6 @@ components:
           maxLength: 300
         release_date:
           type: string
-          format: date-time
-          nullable: true
-        release_date_string:
-          type: string
           nullable: true
           maxLength: 100
         channel:
@@ -302,13 +256,63 @@ components:
           nullable: true
           maxLength: 300
       required:
-      - duration_string
+      - duration
       - pk
       - thumbnail_url
       - title
-      - upload_date_string
       - url
       - webpage_url_domain
+    ExtensionEnum:
+      enum:
+      - mp4
+      - mkv
+      - mov
+      - mp3
+      - aac
+      - wav
+      type: string
+      description: |-
+        * `mp4` - mp4
+        * `mkv` - mkv
+        * `mov` - mov
+        * `mp3` - mp3
+        * `aac` - aac
+        * `wav` - wav
+    TypeEnum:
+      enum:
+      - video
+      - audio
+      type: string
+      description: |-
+        * `video` - video
+        * `audio` - audio
+    URLDetail:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 400
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          default: audio
+        extension:
+          allOf:
+          - $ref: '#/components/schemas/ExtensionEnum'
+          default: mp3
+        resolution:
+          type: integer
+          default: 360
+        frame_rate:
+          type: integer
+        aspect_ratio:
+          type: integer
+        audio_bitrate:
+          type: integer
+          default: 400
+      required:
+      - url
   securitySchemes:
     basicAuth:
       type: http

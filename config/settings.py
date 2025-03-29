@@ -154,3 +154,11 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+# drf spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'EasyDownloader API',
+    'DESCRIPTION': 'Download any content easily!',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
