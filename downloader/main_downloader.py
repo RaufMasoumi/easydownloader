@@ -125,7 +125,8 @@ class MainDownloader:
         'allowed_extractors': allowed_extractors_regexes_list,
         'verbos': True,
         'writethumbnail': True,
-        # 'cookiesfrombrowser': ('chrome', ),
+        # 'cookiefile': 'cookies.txt',
+        # 'cookiesfrombrowser': ('edge', ),
         'postprocessors': [
             {
                 'key': 'FFmpegMetadata',
