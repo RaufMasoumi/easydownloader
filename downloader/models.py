@@ -1,5 +1,6 @@
 from django.db import models
 from datetime import datetime, timedelta
+from django.db.models import Q
 import uuid
 # Create your models here.
 
@@ -7,6 +8,7 @@ import uuid
 class ContentManager(models.Manager):
     def expired_contents(self):
         return self.filter(expiration_date__lte=datetime.now())
+        # return self.filter(Q(expiration_date__lte=datetime.now()) || Q(expired=True))
 
     def valid_contents(self):
         return self.filter(expiration_date__gt=datetime.now())
@@ -46,6 +48,9 @@ class Content(models.Model):
     downloaded_successfully = models.BooleanField(default=False)
     expired = models.BooleanField(blank=True, default=False)
     objects = ContentManager()
+
+    class Meta:
+        ordering = ['-processed_at', ]
 
     def __str__(self):
         return f'{self.pk} content'
