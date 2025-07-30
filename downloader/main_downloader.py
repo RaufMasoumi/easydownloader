@@ -125,6 +125,7 @@ class MainDownloader:
         'allowed_extractors': allowed_extractors_regexes_list,
         'verbos': True,
         'writethumbnail': True,
+        # 'progress_hooks': [hook, ],
         # 'cookiefile': 'cookies.txt',
         # 'cookiesfrombrowser': ('edge', ),
         'postprocessors': [
@@ -228,6 +229,15 @@ class MainDownloader:
         return code, ytdl_obj
 
     @raise_download_process_error
+    def get_download_path(self, ytdl_obj):
+        info = self.extract_info(ytdl_obj)
+        download_path = ytdl_obj.prepare_filename(info)
+        download_path = re.sub(
+            r'\.[^.\\]+$', f'.{self.detail['extension']}', download_path
+        ) if self.detail.get('extension') else download_path
+        return download_path
+
+    @raise_download_process_error
     def get_content_obj(self, ytdl_obj):
         """
         Creates a new content obj for the process and returns it.
@@ -238,16 +248,12 @@ class MainDownloader:
             return self.content_obj
 
         info = self.extract_info(ytdl_obj)
-        download_path = ytdl_obj.prepare_filename(info)
-        download_path = re.sub(
-            r'\.[^.\\]+$', f'.{self.detail['extension']}', download_path
-        ) if self.detail.get('extension') else download_path
         data = {
             'info_id': info.get('id'),
             'info_file_path': self.info_file_path,
             'url': info.get('original_url') or info.get('webpage_url'),
             'title': info.get('title'),
-            'download_path': download_path,
+            'download_path': self.get_download_path(ytdl_obj),
             'downloaded_successfully': self.downloaded_successfully
         }
         if self.pre_created_content_obj:
@@ -267,7 +273,7 @@ class MainDownloader:
         Raises DownloadProcessError for any failure in process.
         :param main_ytdl_obj:
         :param download:
-        :return:
+        :returns:
         :raises DownloadProcessError:
         """
         main_ytdl_obj = CustomYoutubeDL(self.options) if not main_ytdl_obj else main_ytdl_obj

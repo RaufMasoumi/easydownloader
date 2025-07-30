@@ -77,19 +77,21 @@ class YoutubeDownloader(BaseDownloader):
     extractor = 'youtube'
 
     def __init__(
-            self, url, where_to_save='temp', info=None, info_file_path=None, default_options=None,
-            main_downloader_obj=None, detail=None
+            self, url, detail=None,  where_to_save='temp', info=None, info_file_path=None, default_options=None,
+            main_downloader_obj=None,
     ):
         self.url = url
         self.where_to_save = where_to_save
         self.info = info
         self.info_file_path = info_file_path
+        if self.info and not self.info_file_path and self.info.get('info_file_path', None):
+            self.info_file_path = self.info['info_file_path']
         self.options = default_options if default_options else {}
         self.main_downloader_obj = main_downloader_obj
         self.detail = detail if detail else {}
         self.is_video = True if self.detail.get('type') == 'video' else False
 
-    def get_format(self, default_format='best'):
+    def get_format(self, default_format='bestvideo+bestaudio/best/best*'):
         if not self.detail:
             return default_format
         translated_format = ''
@@ -109,7 +111,7 @@ class YoutubeDownloader(BaseDownloader):
                     }, ]
             if self.detail.get('aspect_ratio'):
                 filter_string += '[aspect_ratio={aspect_ratio}]'.format(aspect_ratio=self.detail['aspect_ratio'])
-            translated_format += f'bestvideo{filter_string}+bestaudio/bestvideo+bestaudio/best'
+            translated_format += f'bestvideo{filter_string}+bestaudio/bestvideo+bestaudio/best/best*'
 
         else:
             filter_string = ''
