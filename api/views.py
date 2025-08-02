@@ -78,9 +78,9 @@ class GetContentInfoAPIView(APIView):
     )
     def get(self, request, *args, data=None, **kwargs):
         data = data if data else request.query_params
-        serializer = URLDetailSerializer(data=data)
-        if serializer.is_valid():
-            process_url_result = async_process_url.delay(serializer.validated_data['url'], detail=serializer.validated_data)
+        url_detail_serializer = URLDetailSerializer(data=data)
+        if url_detail_serializer.is_valid():
+            process_url_result = async_process_url.delay(url_detail_serializer.validated_data['url'], detail=url_detail_serializer.validated_data)
             try:
                 result = process_url_result.get()
             except DownloadProcessError as error:
@@ -107,8 +107,9 @@ class GetContentInfoAPIView(APIView):
                     }
                     content_info_serializer = ContentInfoSerializer(data=content_info_data)
                     if content_info_serializer.is_valid():
+                        print(url_detail_serializer.validated_data)
                         download_content_result = async_download_content.delay(
-                            serializer.validated_data['url'], detail=serializer.validated_data, info=info,
+                            url_detail_serializer.validated_data['url'], detail=url_detail_serializer.validated_data, info=info,
                             info_file_path=info.get('info_file_path'), pre_created_content_obj=content.pk
                         )
                         content.celery_download_task_id = download_content_result.task_id
@@ -119,7 +120,7 @@ class GetContentInfoAPIView(APIView):
                 else:
                     return Response("Could not extract the content info of given url!", status=status.HTTP_502_BAD_GATEWAY)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(url_detail_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         operation_id="api_getinfo_post",
@@ -151,16 +152,17 @@ class DownloadContentAPIView(APIView):
             content = Content.objects.valid_contents().get(pk=pk)
         except Content.DoesNotExist:
             return Response("There is no such content!", status=status.HTTP_404_NOT_FOUND)
-
+        # add else here?
         if content.celery_download_task_id:
             download_result = AsyncResult(id=content.celery_download_task_id)
         else:
             detail_fields = ['type', 'extension', 'resolution', 'frame_rate', 'aspect_ratio', 'bitrate']
             content_detail = {k: v for k, v in model_to_dict(content).items() if k in detail_fields}
             download_result = async_download_content.delay(
-                content.url, detail=content_detail, info=content.info, info_file_path=content.info_file_path,
+                content.url, detail=content_detail, info_file_path=content.info_file_path,
                 pre_created_content_obj=content.pk
             )
+            # should add download_task_id field of content?
         try:
             result = download_result.get()
         except DownloadProcessError as error:
@@ -169,7 +171,7 @@ class DownloadContentAPIView(APIView):
             if download_result.successful():
                 content.refresh_from_db()
                 if content.download_path and content.downloaded_successfully:
-                    return FileResponse(open(content.download_path, 'rb'), as_attachment=True)
+                    return FileResponse(open(content.download_path, 'rb'), as_attachment=True, status=status.HTTP_200_OK)
             return Response("Download process was unsuccessful!", status=status.HTTP_502_BAD_GATEWAY)
 
     @extend_schema(
