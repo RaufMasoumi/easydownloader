@@ -91,10 +91,6 @@ class YoutubeDownloaderTests(TestCase):
                     'preferedformat': f'{self.video_detail['extension']}',
                 },
                 {
-                    'key': 'EmbedThumbnail',
-                    'already_have_thumbnail': False,
-                },
-                {
                     'key': 'FFmpegMetadata',
                 },
             ]

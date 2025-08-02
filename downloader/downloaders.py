@@ -125,8 +125,15 @@ class YoutubeDownloader(BaseDownloader):
                     audio_converter_postprocessor.update({
                         'preferredquality': f'{self.detail["audio_bitrate"]}',
                     })
-                postprocessors += [audio_converter_postprocessor, ]
+                postprocessors += [
+                    {
+                        'key': 'EmbedThumbnail',
+                        'already_have_thumbnail': False,
+                    },
+                    audio_converter_postprocessor,
+                ]
             translated_format += f'bestaudio{filter_string}/bestaudio/best'
+        postprocessors = delete_copies(postprocessors)
         self.options['postprocessors'] = postprocessors
         return translated_format
 
@@ -176,22 +183,9 @@ class YoutubeDownloader(BaseDownloader):
 class InstagramDownloader(YoutubeDownloader):
     extractor = 'instagram'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def delete_copies(arr):
+    new_list = []
+    for i in arr:
+        if i not in new_list:
+            new_list.append(i)
+    return new_list

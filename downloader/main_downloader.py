@@ -123,7 +123,7 @@ class MainDownloader:
         'format': 'bestvideo+bestaudio/best/best*',
         'outtmpl': str(BASE_DIR / os.path.join(download_dir, '%(title)s.%(ext)s')),
         'allowed_extractors': allowed_extractors_regexes_list,
-        'verbos': True,
+        # 'verbose': True,
         'writethumbnail': True,
         # 'progress_hooks': [hook, ],
         # 'cookiefile': 'cookies.txt',
@@ -132,10 +132,10 @@ class MainDownloader:
             {
                 'key': 'FFmpegMetadata',
             },
-            {
-                'key': 'EmbedThumbnail',
-                'already_have_thumbnail': False,
-            }
+            # {
+            #     'key': 'EmbedThumbnail',
+            #     'already_have_thumbnail': False,
+            # }
         ]
     }
 
