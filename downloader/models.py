@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models import Q
 import uuid
@@ -7,20 +8,20 @@ import uuid
 
 class ContentManager(models.Manager):
     def expired_contents(self):
-        return self.filter(expiration_date__lte=datetime.now())
+        return self.filter(expiration_date__lte=timezone.now())
         # return self.filter(Q(expiration_date__lte=datetime.now()) || Q(expired=True))
 
     def valid_contents(self):
-        return self.filter(expiration_date__gt=datetime.now())
+        return self.filter(expiration_date__gt=timezone.now())
 
     def downloaded_contents(self):
         return self.filter(downloaded_successfully=True)
 
     def downloaded_valid_contents(self):
-        return self.filter(downloaded_successfully=True, expiration_date__gt=datetime.now())
+        return self.filter(downloaded_successfully=True, expiration_date__gt=timezone.now())
 
     def downloaded_expired_contents(self):
-        return self.filter(downloaded_successfully=True, expiration_date__lte=datetime.now())
+        return self.filter(downloaded_successfully=True, expiration_date__lte=timezone.now())
 
 
 class AllowedExtractorManager(models.Manager):
