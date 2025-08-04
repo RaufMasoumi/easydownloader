@@ -28,6 +28,21 @@ services:
        - django
        - redis
 
+   celery_beat:
+     build: .
+     command: celery -A config beat
+     environment:
+       - DJANGO_SECRET_KEY=django-insecure-nox5f%g+_r6c^z2%y@(esv!r(3-cjo8+opax_(c2=ek=8gzkw&
+       - DATABASE_URL=postgresql://raufmasoumi:09011385@postgresql:5432/easydownloader
+       - DJANGO_DEBUG=true
+       - CELERY_BROKER_URL=redis://redis:6379/0
+     volumes:
+       - .:/code
+     depends_on:
+       - django
+       - redis
+       - celery
+
    postgresql:
      image: postgres:latest
      ports:
