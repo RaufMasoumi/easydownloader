@@ -60,10 +60,7 @@ class Content(models.Model):
         super().save(**kwargs)
         if self.processed_at and not self.expiration_date:
             self.expiration_date = self.processed_at + timedelta(hours=5)
-            update_fields = kwargs.get('update_fields')
-            if update_fields:
-                kwargs['update_fields'] = {'expiration_date'}.union(update_fields)
-        super().save()
+            super().save(update_fields=['expiration_date', ])
 
 
 class AllowedExtractor(models.Model):

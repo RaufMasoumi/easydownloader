@@ -124,7 +124,7 @@ class MainDownloader:
         'outtmpl': str(BASE_DIR / os.path.join(download_dir, '%(title)s.%(ext)s')),
         'allowed_extractors': allowed_extractors_regexes_list,
         # 'verbose': True,
-        'writethumbnail': True,
+        # 'writethumbnail': True,
         # 'progress_hooks': [hook, ],
         # 'cookiefile': 'cookies.txt',
         # 'cookiesfrombrowser': ('edge', ),

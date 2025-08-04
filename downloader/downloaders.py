@@ -117,6 +117,11 @@ class YoutubeDownloader(BaseDownloader):
             filter_string = ''
             if self.detail.get('extension'):
                 filter_string += '[ext={extension}]'.format(extension=self.detail['extension'])
+                self.options.update(
+                    {
+                        'writethumbnail': True,
+                    }
+                )
                 audio_converter_postprocessor = {
                             'key': 'FFmpegExtractAudio',
                             'preferredcodec': f'{self.detail["extension"]}',
