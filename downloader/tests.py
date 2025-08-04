@@ -1,3 +1,5 @@
+from django.test import TestCase
+from datetime import timedelta
 from django.test import TestCase, override_settings
 import json
 import os.path
@@ -8,6 +10,68 @@ from .tasks import async_extract_info, async_process_url, async_download_content
 # Create your tests here.
 
 
+class ContentTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.content = Content.objects.create(
+            info_id='a7TKdWmySP8',
+            info_file_path='info/info-a7TKdWmySP8',
+            title='test content',
+            type='audio',
+            extension='mp3',
+        )
+        cls.content2 = Content.objects.create(
+            info_id='a7TKdWmySP8',
+            info_file_path='info/info-a7TKdWmySP8',
+            title='test content2',
+            type='audio',
+            extension='mp3',
+            audio_bitrate=320,
+        )
+
+    def test_model_creation(self):
+        self.assertEqual(Content.objects.count(), 2)
+        self.assertTrue(Content.objects.filter(title='test content').exists())
+        self.assertEqual(Content.objects.get(pk=self.content.pk).title, 'test content')
+        self.assertEqual(Content.objects.get(pk=self.content2.pk).audio_bitrate, 320)
+
+    def test_expiration_date_setting(self):
+        self.assertFalse(self.content.expired)
+        self.assertEqual(self.content.expiration_date, self.content.processed_at + timedelta(hours=5))
+
+    def test_model_manager(self):
+        self.assertEqual(Content.objects.expired_contents().count(), 0)
+        self.assertEqual(Content.objects.valid_contents().count(), 2)
+        self.assertEqual(Content.objects.downloaded_contents().count(), 0)
+        self.assertEqual(Content.objects.downloaded_valid_contents().count(), 0)
+        self.assertEqual(Content.objects.downloaded_expired_contents().count(), 0)
+
+
+class AllowedExtractorTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.allowed_extractor = AllowedExtractor.objects.create(
+            name='testextractor',
+            regex='^testextractor',
+            active=True,
+        )
+        cls.allowed_extractor2 = AllowedExtractor.objects.create(
+            name='testextractor2',
+            regex='^testextractor2',
+            active=False,
+        )
+
+    def test_model_creation(self):
+        self.assertEqual(AllowedExtractor.objects.count(), 2)
+        self.assertTrue(AllowedExtractor.objects.filter(name='testextractor').exists())
+        self.assertEqual(AllowedExtractor.objects.get(pk=self.allowed_extractor.pk).regex, '^testextractor')
+
+    def test_model_manager(self):
+        self.assertEqual(AllowedExtractor.objects.active_extractors().count(), 1)
+
+
 class MainDownloaderTests(TestCase):
 
     @classmethod
@@ -16,6 +80,11 @@ class MainDownloaderTests(TestCase):
             name='youtube',
             regex='^youtube',
             active=True,
+        )
+        cls.instagram_extractor = AllowedExtractor.objects.create(
+            name='instagram',
+            regex='^instagram',
+            active=False,
         )
         cls.content_url = 'https://youtu.be/2PuFyjAs7JA?si=R6UuXVl-BPr-niXv'
         with CustomYoutubeDL() as ytdl_obj:
@@ -28,6 +97,14 @@ class MainDownloaderTests(TestCase):
             detail={'type': 'video', 'resolution': 360, 'extension': 'mp4'},
         )
 
+    def test_default_options(self):
+        """
+            Tests MainDownloader default_options property that will be updated with given options argument.
+        """
+        self.assertDictEqual(self.main_downloader_obj.options, self.main_downloader_obj.default_options)
+        self.assertEqual(self.main_downloader_obj.default_options.get('format', None), 'bestvideo+bestaudio/best/best*')
+        self.assertEqual(self.main_downloader_obj.default_options.get('outtmpl', None), 'temp/%(title)s.%(ext)s')
+        self.assertListEqual(self.main_downloader_obj.default_options.get('allowed_extractors', list()), [self.youtube_extractor.regex, ])
 
     def test_info_extraction_without_info_without_info_file(self):
         """
@@ -46,7 +123,6 @@ class MainDownloaderTests(TestCase):
             self.assertTrue(os.path.isfile(self.main_downloader_obj.info_file_path))
             with open(self.main_downloader_obj.info_file_path, 'r') as info_file:
                 self.assertEqual(info['id'], json.load(info_file)['id'])
-
 
     def test_info_extraction_with_info_without_info_file(self):
         """
@@ -81,7 +157,6 @@ class MainDownloaderTests(TestCase):
             self.assertEqual(self.info['id'], info['id'])
             self.assertEqual(self.info['id'], self.main_downloader_obj.info['id'])
             self.assertEqual(self.main_downloader_obj.info_file_path, f'info/info-{self.info['id']}.json')
-
 
     def test_custom_downloader_selection(self):
         """
@@ -122,7 +197,6 @@ class MainDownloaderTests(TestCase):
             self.main_downloader_obj.download(ytdl_obj, fake=True)
             self.assertFalse(os.path.exists(content_path))
             self.assertTrue(self.main_downloader_obj.downloaded_successfully)
-
 
     def test_content_obj_creation(self):
         """
