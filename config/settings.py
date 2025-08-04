@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # added
     'rest_framework',
     'django_celery_results',
+    'django_celery_beat',
     'crispy_forms',
     'crispy_bootstrap4',
     'drf_spectacular',
@@ -147,6 +148,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'default'
 CELERY_RESULT_EXTENDED = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # crispy
 CRISPY_TEMPLATE_PACK = 'bootstrap4'

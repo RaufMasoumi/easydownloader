@@ -34,6 +34,7 @@ def async_download_content(*args, **kwargs):
     return code, info, content.pk
 
 
+@shared_task
 def delete_expired_content_files():
     expired_but_not_processed_contents = Content.objects.expired_contents().filter(expired=False)
     objs = []
@@ -46,6 +47,7 @@ def delete_expired_content_files():
         content.expired = True
         objs.append(content)
     Content.objects.bulk_update(objs, ['download_path', 'expired'])
+    return 0
 
 
 def update_kwargs_content_obj(kwargs, update_fields):

@@ -18,6 +18,7 @@ psycopg2 = "*"
 redis = "*"
 whitenoise = "*"
 yt-dlp = "*"
+django-celery-beat = "*"
 
 [dev-packages]
 
