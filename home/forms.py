@@ -5,7 +5,7 @@ class URLForm(forms.Form):
     # video format pattern
     # [type] [file extension] [resolution(height by p)] [aspect ratio] [frame rate]
     # audio format pattern
-    # [type] [file extension] [bitrate(kbps)]
+    # [type] [file extension] [audio bitrate(kbps)]
     # Do not forget to put spaces between fields because the choice will be splitted by spaces.
     # write none for the fields that don't want to change. (no needed for the fields after last set field but preferred)
 
@@ -34,12 +34,12 @@ class URLForm(forms.Form):
         'mp3 128kbps': 'MP3 128kbps',
         'mp3 320kbps': 'MP3 320kbps',
         'mp3 best': 'MP3 Best Quality',
-        'wav 16bit': 'WAV 16bit',
-        'wav 24bit': 'WAV 24bit',
+        'wav 128kbps': 'WAV 128kbps',
+        'wav 320kbps': 'WAV 320kbps',
         'wav best': 'WAV Best Quality',
     }
     AUDIO_FORMAT_PREFIX = 'audio'
-    AUDIO_FORMAT_DATA_NAMES = ['extension', 'bitrate']
+    AUDIO_FORMAT_DATA_NAMES = ['extension', 'audio_bitrate']
 
     CONTENT_DETAIL_CHOICES = {
         'VIDEO': {'video' + ' ' + k: v for k, v in VIDEO_FORMATS.items()},
@@ -48,29 +48,27 @@ class URLForm(forms.Form):
     url = forms.CharField(max_length=400)
     detail = forms.ChoiceField(choices=CONTENT_DETAIL_CHOICES, initial='mp4 360p')
 
-    # def translate_format(self, default='bestvideo*/best'):
-    #     translated_format = default
-    #     try:
-    #         format_string = self.cleaned_data['format']
-    #     except AttributeError:
-    #         return translated_format
-    #     else:
-    #         format_data_list = format_string.split(' ')
-    #         if format_data_list[0] == self.VIDEO_FORMAT_PREFIX:
-    #             format_data = make_format_data_dict(self.VIDEO_FORMAT_DATA_NAMES, format_data_list)
-    #         else:
-    #             format_data = make_format_data_dict(self.AUDIO_FORMAT_DATA_NAMES, format_data_list)
-    #         translated_format =
+    def get_detail_dict(self):
+        detail_str = self.cleaned_data.get('detail')
+        values_list = detail_str.split(' ')
+        detail_dict = dict()
+        if self.VIDEO_FORMAT_PREFIX in values_list:
+            detail_dict = make_detail_dict(self.VIDEO_FORMAT_DATA_NAMES, values_list)
+        else:
+            detail_dict = make_detail_dict(self.AUDIO_FORMAT_DATA_NAMES, values_list)
+        return detail_dict
 
-def make_format_data_dict(keys: list, values: list):
-    format_data_dict = dict()
-    keys.insert(0, 'type')
+
+def make_detail_dict(keys: list, values: list):
+    detail_dict = dict()
+    if 'type' not in keys:
+        keys.insert(0, 'type')
     values_length = len(values)
     for i in range(len(keys)):
-        format_data_dict.setdefault(keys[i])
+        detail_dict.setdefault(keys[i])
         if i < values_length:
-            format_data_dict[keys[i]] = values[i]
-    return format_data_dict
+            detail_dict[keys[i]] = values[i]
+    return detail_dict
 
 
 
