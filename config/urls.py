@@ -23,8 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # added
-    # path('', RedirectView.as_view(pattern_name='home')),
-    # path('', include('home.urls')),
+    path('', RedirectView.as_view(pattern_name='home')),
+    path('', include('home.urls')),
     path('downloads/', include('downloader.urls')),
     path('api/', include('api.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

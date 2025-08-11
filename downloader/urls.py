@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import DownloadedContentResponseView
+from .views import DownloadContentView
 
 urlpatterns = [
-    path('<uuid:pk>/', DownloadedContentResponseView.as_view(), name='download')
+    path('<uuid:pk>/', DownloadContentView.as_view(), name='download-content'),
 ]
