@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import View, FormView
 from celery.result import AsyncResult
 from rest_framework import status
+import os
 from api.views import make_short_description
 from home.forms import URLForm
 from .main_downloader import DownloadProcessError
@@ -96,7 +97,7 @@ class DownloadContentView(View):
         else:
             if download_result.successful():
                 content.refresh_from_db()
-                if content.download_path and content.downloaded_successfully:
+                if content.download_path and content.downloaded_successfully and os.path.exists(content.download_path):
                     return FileResponse(open(content.download_path, 'rb'), as_attachment=True, status=status.HTTP_200_OK)
             return HttpResponse("<h1>Download process was unsuccessful!</h1>", status=status.HTTP_502_BAD_GATEWAY)
 

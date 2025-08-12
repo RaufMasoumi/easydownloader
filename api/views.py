@@ -162,7 +162,8 @@ class DownloadContentAPIView(APIView):
                 content.url, detail=content_detail, info_file_path=content.info_file_path,
                 pre_created_content_obj=content.pk
             )
-            # should add download_task_id field of content?
+            content.celery_download_task_id = download_result.task_id
+            content.save()
         try:
             result = download_result.get()
         except DownloadProcessError as error:
