@@ -1,12 +1,18 @@
-from django.test import TestCase
-from datetime import timedelta
 from django.test import TestCase, override_settings
+from django.shortcuts import reverse
+from django.urls import resolve
+from django.http import FileResponse
+from rest_framework import status
+from celery.result import AsyncResult
+from datetime import timedelta
 import json
-import os.path
+import os
+import time
 from .main_downloader import MainDownloader, CustomYoutubeDL, DownloadProcessError
 from .downloaders import BaseDownloader, YoutubeDownloader
 from .models import Content, AllowedExtractor
 from .tasks import async_extract_info, async_process_url, async_download_content
+from .views import DownloadContentView
 # Create your tests here.
 
 
@@ -15,15 +21,15 @@ class ContentTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.content = Content.objects.create(
-            info_id='a7TKdWmySP8',
-            info_file_path='info/info-a7TKdWmySP8',
+            info_id='2PuFyjAs7JA',
+            info_file_path='info/info-2PuFyjAs7JA.json',
             title='test content',
             type='audio',
             extension='mp3',
         )
         cls.content2 = Content.objects.create(
-            info_id='a7TKdWmySP8',
-            info_file_path='info/info-a7TKdWmySP8',
+            info_id='2PuFyjAs7JA',
+            info_file_path='info/info-2PuFyjAs7JA.json',
             title='test content2',
             type='audio',
             extension='mp3',
@@ -94,7 +100,7 @@ class MainDownloaderTests(TestCase):
     def setUp(self):
         self.main_downloader_obj = MainDownloader(
             url=self.content_url,
-            detail={'type': 'video', 'resolution': 360, 'extension': 'mp4'},
+            detail={'type': 'audio', 'audio_bitrate': 320, 'extension': 'mp3'},
         )
 
     def test_default_options(self):
@@ -102,7 +108,7 @@ class MainDownloaderTests(TestCase):
             Tests MainDownloader default_options property that will be updated with given options argument.
         """
         self.assertDictEqual(self.main_downloader_obj.options, self.main_downloader_obj.default_options)
-        self.assertEqual(self.main_downloader_obj.default_options.get('format', None), 'bestvideo+bestaudio/best/best*')
+        self.assertEqual(self.main_downloader_obj.default_options.get('format', None), 'bestaudio[ext=mp3]/bestaudio/best')
         self.assertEqual(self.main_downloader_obj.default_options.get('outtmpl', None), 'temp/%(title)s.%(ext)s')
         self.assertListEqual(self.main_downloader_obj.default_options.get('allowed_extractors', list()), [self.youtube_extractor.regex, ])
 
@@ -193,7 +199,7 @@ class MainDownloaderTests(TestCase):
             self.assertFalse(self.main_downloader_obj.downloaded_successfully)
             content_path = self.main_downloader_obj.get_download_path(ytdl_obj)
             if os.path.exists(content_path):
-                os.remove(content_path)
+                wait_until_file_is_being_processed_then_delete(content_path, tries=5)
             self.main_downloader_obj.download(ytdl_obj, fake=True)
             self.assertFalse(os.path.exists(content_path))
             self.assertTrue(self.main_downloader_obj.downloaded_successfully)
@@ -252,7 +258,7 @@ class MainDownloaderTests(TestCase):
         self.assertTrue(os.path.exists(self.main_downloader_obj.get_download_path(ytdl_obj)))
         self.assertTrue(os.path.isfile(content_obj.download_path))
         self.assertIsInstance(ytdl_obj, CustomYoutubeDL)
-        os.remove(content_obj.download_path)
+        wait_until_file_is_being_processed_then_delete(content_obj.download_path, tries=5)
 
         # download=False
         code, info, content_obj, ytdl_obj = self.main_downloader_obj.run(download=False)
@@ -272,12 +278,13 @@ class MainDownloaderTests(TestCase):
             It should raise DownloadProcessError for any error during the process.
         """
         self.main_downloader_obj.url = 'wrong url'
-        try:
-            self.main_downloader_obj.run(download=True)
-        except Exception as error:
-            self.assertIsInstance(error, DownloadProcessError)
-        else:
-            self.fail('Did not raised DownloadProcessError for a wrong url!')
+        self.assertRaises(DownloadProcessError, self.main_downloader_obj.run, download=True)
+        # try:
+        #     self.main_downloader_obj.run(download=True)
+        # except Exception as error:
+        #     self.assertIsInstance(error, DownloadProcessError)
+        # else:
+        #     self.fail('Did not raised DownloadProcessError for a wrong url!')
 
 
 @override_settings(
@@ -333,7 +340,7 @@ class MainDownloaderAsyncTasksTests(TestCase):
         self.assertEqual(content_obj.url, self.content_url)
         self.assertTrue(os.path.exists(content_obj.download_path))
         self.assertTrue(os.path.isfile(content_obj.download_path))
-        os.remove(content_obj.download_path)
+        wait_until_file_is_being_processed_then_delete(content_obj.download_path, tries=5)
 
 
     def test_async_tasks_combination(self):
@@ -355,4 +362,78 @@ class MainDownloaderAsyncTasksTests(TestCase):
         self.assertEqual(content_obj.pk, content_pk)
         self.assertTrue(os.path.exists(content_obj.download_path))
         self.assertTrue(os.path.isfile(content_obj.download_path))
-        os.remove(content_obj.download_path)
+        wait_until_file_is_being_processed_then_delete(content_obj.download_path, tries=5)
+
+
+@override_settings(
+    CELERY_TASK_ALWAYS_EAGER=True,
+    CELERY_TASK_STORE_EAGER_RESULT=True,
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+)
+class DownloadContentViewTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.youtube_extractor = AllowedExtractor.objects.create(
+            name='youtube',
+            regex='^youtube',
+            active=True,
+        )
+        cls.content_url = 'https://youtu.be/2PuFyjAs7JA?si=R6UuXVl-BPr-niXv'
+        cls.content = Content.objects.create(
+            info_id='2PuFyjAs7JA',
+            info_file_path='info/info-2PuFyjAs7JA.json',
+            url=cls.content_url,
+            title='test content',
+            type='audio',
+            extension='mp3',
+            audio_bitrate=320,
+        )
+        cls.path = reverse('download-content', kwargs={'pk': cls.content.pk})
+
+    def test_view_url(self):
+        self.assertEqual(resolve(self.path).func.__name__, DownloadContentView.as_view().__name__)
+
+    def test_view_separately(self):
+        response = self.client.get(self.path)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.content.refresh_from_db()
+        self.assertTrue(self.content.downloaded_successfully)
+        self.assertIsNotNone(self.content.download_path)
+        self.assertTrue(os.path.exists(self.content.download_path))
+        self.assertTrue(os.path.isfile(self.content.download_path))
+        self.assertIsInstance(response, FileResponse)
+        self.assertIn('attachment;', response.get('Content-Disposition', None))
+        self.assertEqual(response.get('Content-Type', None), 'audio/mpeg')
+        wait_until_file_is_being_processed_then_delete(self.content.download_path, 5)
+
+    def test_view_with_download_started_content_get(self):
+        detail = {'type': 'audio', 'audio_bitrate': 320, 'extension': 'mp3'}
+        download_result = async_download_content.delay(self.content_url, detail=detail)
+        _, info, content_pk = download_result.get()
+        content = Content.objects.get(pk=content_pk)
+        content.celery_download_task_id = download_result.task_id
+        content.save()
+        path = reverse('download-content', kwargs={'pk': content.pk})
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        content.refresh_from_db()
+        self.assertTrue(content.downloaded_successfully)
+        self.assertIsNotNone(content.download_path)
+        self.assertTrue(os.path.exists(content.download_path))
+        self.assertTrue(os.path.isfile(content.download_path))
+        self.assertIsInstance(response, FileResponse)
+        self.assertIn('attachment;', response.get('Content-Disposition', None))
+        self.assertEqual(response.get('Content-Type', None), 'audio/mpeg')
+        wait_until_file_is_being_processed_then_delete(content.download_path, 5)
+
+
+def wait_until_file_is_being_processed_then_delete(file_path, tries=5):
+    for i in range(tries):
+        try:
+            print('trying to delete the file')
+            os.remove(file_path)
+        except PermissionError as e:
+            time.sleep(3)
+        else:
+            break

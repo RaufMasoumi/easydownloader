@@ -1,17 +1,20 @@
 from django.test import TestCase, override_settings
-from django.shortcuts import reverse, get_object_or_404
+from django.shortcuts import reverse
 from django.urls import resolve
 from django.http import FileResponse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from celery.result import AsyncResult
 import os
 from downloader.main_downloader import MainDownloader, CustomYoutubeDL
 from downloader.models import AllowedExtractor, Content
+from downloader.tests import wait_until_file_is_being_processed_then_delete
 from .views import GetContentInfoAPIView, DownloadContentAPIView
 
 
 @override_settings(
     CELERY_TASK_ALWAYS_EAGER=True,
+    CELERY_TASK_STORE_EAGER_RESULT=True,
     CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
 )
 class GetContentInfoAPIViewTests(APITestCase):
@@ -26,7 +29,7 @@ class GetContentInfoAPIViewTests(APITestCase):
         cls.content_url = 'https://youtu.be/2PuFyjAs7JA?si=R6UuXVl-BPr-niXv'
         cls.main_downloader_obj = MainDownloader(
             url=cls.content_url,
-            detail={'type': 'video', 'resolution': 360, 'extension': 'mp4'},
+            detail={'type': 'audio', 'audio_bitrate': 320, 'extension': 'mp3'},
         )
         with CustomYoutubeDL(cls.main_downloader_obj.options) as ytdl_obj:
             cls.info = cls.main_downloader_obj.extract_info(ytdl_obj)
@@ -38,18 +41,26 @@ class GetContentInfoAPIViewTests(APITestCase):
     def test_view_with_valid_data_get(self):
         data = {
             'url': self.content_url,
-            'type': 'video',
-            'resolution': 360,
-            'extension': 'mp4',
+            'type': 'audio',
+            'audio_bitrate': 320,
+            'extension': 'mp3',
         }
         response = self.client.get(self.path, data=data)
-        content = get_object_or_404(Content, pk=response.data.get('pk'))
+        if Content.objects.filter(pk=response.data.get('pk')).exists():
+            content = Content.objects.get(pk=response.data.get('pk'))
+        else:
+            self.fail('The content is not created')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # response.data?
         self.assertContains(response, self.content_url)
         self.assertContains(response, self.info.get('title', None))
         self.assertNotContains(response, 'Not contains text')
         self.assertIsNotNone(content.celery_download_task_id)
+        download_task_result = AsyncResult(content.celery_download_task_id)
+        download_task_result.get()
+        content.refresh_from_db()
+        if os.path.exists(content.download_path):
+            os.remove(content.download_path)
 
     def test_view_with_invalid_data_get(self):
         data1 = {
@@ -67,17 +78,25 @@ class GetContentInfoAPIViewTests(APITestCase):
     def test_view_with_valid_data_post(self):
         data = {
             'url': self.content_url,
-            'type': 'video',
-            'resolution': 360,
-            'extension': 'mp4',
+            'type': 'audio',
+            'audio_bitrate': 320,
+            'extension': 'mp3',
         }
         response = self.client.post(self.path, data=data)
-        content = get_object_or_404(Content, pk=response.data.get('pk'))
+        if Content.objects.filter(pk=response.data.get('pk')).exists():
+            content = Content.objects.get(pk=response.data.get('pk'))
+        else:
+            self.fail('The content is not created')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, self.content_url)
         self.assertContains(response, self.info.get('title', None))
         self.assertNotContains(response, 'Not contains text')
         self.assertIsNotNone(content.celery_download_task_id)
+        download_task_result = AsyncResult(content.celery_download_task_id)
+        download_task_result.get()
+        content.refresh_from_db()
+        if os.path.exists(content.download_path):
+            os.remove(content.download_path)
 
     def test_view_with_invalid_data_post(self):
         data1 = {
@@ -110,7 +129,7 @@ class DownloadContentAPIViewTests(APITestCase):
         cls.content_url = 'https://youtu.be/2PuFyjAs7JA?si=R6UuXVl-BPr-niXv'
         cls.main_downloader_obj = MainDownloader(
             url=cls.content_url,
-            detail={'type': 'video', 'resolution': 360, 'extension': 'mp4'},
+            detail={'type': 'audio', 'audio_bitrate': 320, 'extension': 'mp3'},
         )
         with CustomYoutubeDL(cls.main_downloader_obj.options) as ytdl_obj:
             cls.info = cls.main_downloader_obj.extract_info(ytdl_obj)
@@ -120,9 +139,9 @@ class DownloadContentAPIViewTests(APITestCase):
             url=self.content_url,
             info_id=self.info['id'],
             info_file_path=self.info['info_file_path'],
-            type='video',
-            resolution=360,
-            extension='mp4',
+            type='audio',
+            audio_bitrate=320,
+            extension='mp3',
         )
         self.path = reverse('download-content-api', kwargs={'pk': self.content.pk})
 
@@ -139,7 +158,8 @@ class DownloadContentAPIViewTests(APITestCase):
         self.assertTrue(os.path.isfile(self.content.download_path))
         self.assertIsInstance(response, FileResponse)
         self.assertIn('attachment;', response.get('Content-Disposition', None))
-        self.assertEqual(response['Content-Type'], 'video/mp4')
+        self.assertEqual(response['Content-Type'], 'audio/mpeg')
+        wait_until_file_is_being_processed_then_delete(self.content.download_path, tries=5)
 
 
     def test_view_separately_post(self):
@@ -152,18 +172,22 @@ class DownloadContentAPIViewTests(APITestCase):
         self.assertTrue(os.path.isfile(self.content.download_path))
         self.assertIsInstance(response, FileResponse)
         self.assertIn('attachment;', response.get('Content-Disposition', None))
-        self.assertEqual(response['Content-Type'], 'video/mp4')
+        self.assertEqual(response['Content-Type'], 'audio/mpeg')
+        wait_until_file_is_being_processed_then_delete(self.content.download_path, tries=5)
 
 
     def test_view_with_get_content_info_api_view(self):
         data = {
             'url': self.content_url,
-            'type': 'video',
-            'resolution': 360,
-            'extension': 'mp4',
+            'type': 'audio',
+            'audio_bitrate': 320,
+            'extension': 'mp3',
         }
         get_info_response = self.client.get(reverse('get-content-info-api'), data=data)
-        content = get_object_or_404(Content, pk=get_info_response.data.get('pk', None))
+        if Content.objects.filter(pk=get_info_response.data.get('pk')).exists():
+            content = Content.objects.get(pk=get_info_response.data.get('pk'))
+        else:
+            self.fail('The content is not created')
         download_content_response = self.client.get(reverse('download-content-api', kwargs={'pk': content.pk}))
         content.refresh_from_db()
         self.assertEqual(download_content_response.status_code, status.HTTP_200_OK)
@@ -173,4 +197,6 @@ class DownloadContentAPIViewTests(APITestCase):
         self.assertTrue(os.path.isfile(content.download_path))
         self.assertIsInstance(download_content_response, FileResponse)
         self.assertIn('attachment;', download_content_response.get('Content-Disposition', None))
-        self.assertEqual(download_content_response['Content-Type'], 'video/mp4')
+        self.assertEqual(download_content_response['Content-Type'], 'audio/mpeg')
+        wait_until_file_is_being_processed_then_delete(content.download_path, tries=5)
+
