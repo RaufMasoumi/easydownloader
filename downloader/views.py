@@ -82,14 +82,12 @@ class DownloadContentView(View):
         if content.celery_download_task_id:
             download_result = AsyncResult(id=content.celery_download_task_id)
         else:
-            detail_fields = ['type', 'extension', 'resolution', 'frame_rate', 'aspect_ratio', 'bitrate']
+            detail_fields = ['type', 'extension', 'resolution', 'frame_rate', 'aspect_ratio', 'audio_bitrate']
             content_detail = {k: v for k, v in model_to_dict(content).items() if k in detail_fields}
             download_result = async_download_content.delay(
                 content.url, detail=content_detail, info_file_path=content.info_file_path,
                 pre_created_content_obj=content.pk
             )
-            content.celery_download_task_id = download_result.task_id
-            content.save()
         try:
             result = download_result.get()
         except DownloadProcessError as error:
@@ -97,6 +95,8 @@ class DownloadContentView(View):
         else:
             if download_result.successful():
                 content.refresh_from_db()
+                content.celery_download_task_id = download_result.task_id
+                content.save()
                 if content.download_path and content.downloaded_successfully and os.path.exists(content.download_path):
                     return FileResponse(open(content.download_path, 'rb'), as_attachment=True, status=status.HTTP_200_OK)
             return HttpResponse("<h1>Download process was unsuccessful!</h1>", status=status.HTTP_502_BAD_GATEWAY)

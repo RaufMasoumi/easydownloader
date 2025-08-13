@@ -18,7 +18,7 @@
             {% if k == 'Thumbnail Url' %}
                 <img src="{{ v }}" alt="{{ v }}" height="360px" width="360px"></img>
             {% elif k == 'Url' %}
-                <h3><a href="{{ v }}">{{ v }}</a></h3>
+                <h3>{{ k }}: <a href="{{ v }}">{{ v }}</a></h3>
             {% elif v %}
                 <h3>{{ k }}: {{ v }}</h3>
             {% endif %}
