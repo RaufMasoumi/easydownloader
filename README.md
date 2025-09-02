@@ -193,6 +193,6 @@ python manage.py test --pattern="*tests.py"
 ---
 
 ## 📜 License
-Distributed under the **MIT License**. See the `LICENSE` file for more information.
+Distributed under the **MIT License**. See the [```LICENSE file```](./LICENSE) for more information.
 
 Developed with ❤️ by Rauf Masoumi  
