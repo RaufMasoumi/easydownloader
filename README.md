@@ -5,10 +5,9 @@ _A robust, fast, and reliable content downloader_
 ![GitHub Pipenv locked Python version](https://img.shields.io/github/pipenv/locked/python-version/RaufMasoumi/easydownloader?style=flat&logo=python&logoColor=orange&label=Python&labelColor=gray&color=orange)
 ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/RaufMasoumi/easydownloader/django?logo=Django&logoColor=white&label=Django&labelColor=gray&color=orange)
 ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/RaufMasoumi/easydownloader/djangorestframework?style=flat&logo=DRF&logoColor=white&label=DjangoRestFramework&labelColor=gray&color=orange)
-
 ![Celery](https://img.shields.io/badge/Celery-Enabled-%2338b000?logo=celery&logoColor=white)
 
----
+
 
 ## 📑 Table of Contents
 - [About](#-about)
